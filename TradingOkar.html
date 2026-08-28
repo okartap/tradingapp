@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Trading DAX/SP500</title>
+<title>Okartap</title>
 <meta name="description" content="Sistema de trading Wyckoff · VSA · O/D · Elliott · ICT · CRT — DAX y SP500 intradía">
 <meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Trading">
+<meta name="apple-mobile-web-app-title" content="Okartap">
 <link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -192,8 +192,8 @@ canvas{width:100%;display:block;}
 
 <!-- ============ SETUP (Firebase config) ============ -->
 <div id="setupScreen" class="hidden">
-  <div class="logo-big">TS</div>
-  <h1 class="center">Configurar Trading System</h1>
+  <div class="logo-big">OK</div>
+  <h1 class="center">Configurar Okartap</h1>
   <p class="center">Pega aquí la configuración de tu proyecto Firebase (Consola Firebase → ⚙️ Configuración del proyecto → tus apps → SDK setup and configuration → "Config"). Solo hace falta hacerlo una vez en este dispositivo.</p>
   <label>Configuración Firebase (pega el bloque completo)</label>
   <textarea id="fbConfigInput" rows="8" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea>
@@ -203,8 +203,8 @@ canvas{width:100%;display:block;}
 
 <!-- ============ LOGIN ============ -->
 <div id="loginScreen" class="hidden">
-  <div class="logo-big">TS</div>
-  <h1 class="center">Trading DAX/SP500</h1>
+  <div class="logo-big">OK</div>
+  <h1 class="center">Okartap</h1>
   <p class="center">Wyckoff · VSA · O/D · Elliott · ICT · CRT</p>
   <label>Email</label>
   <input type="email" id="loginEmail" autocomplete="username">
@@ -219,9 +219,9 @@ canvas{width:100%;display:block;}
 <div id="app" class="hidden">
   <header class="topbar">
     <div class="brand">
-      <div class="logo">TS</div>
+      <div class="logo">OK</div>
       <div class="brand-text">
-        <div>Trading System</div>
+        <div>Okartap</div>
         <div id="topSub">DAX · SP500 intradía</div>
       </div>
     </div>
@@ -528,6 +528,7 @@ const INSTRUMENTOS = {
 const LS_FB_CONFIG = "ts_fbConfig";
 const LS_LAST_TAB = "ts_lastTab";
 const LS_CAPITAL = "ts_capitalInicial";
+const LS_COMISIONES = "ts_comisiones";
 
 // Config del proyecto Firebase "TradingOkar" — incrustada para que la app
 // funcione directamente en cualquier dispositivo sin pantalla de configuración.
@@ -553,6 +554,28 @@ function setCapitalInicial(modo, value) {
   try { saved = JSON.parse(localStorage.getItem(LS_CAPITAL) || "{}"); } catch (e) {}
   saved[modo] = value;
   localStorage.setItem(LS_CAPITAL, JSON.stringify(saved));
+}
+
+// Comisión de ida+vuelta (compra + venta ya sumadas) por mercado. Se usa
+// para rellenar el campo "Comisión" al crear una operación nueva, y para
+// calcular el resultado neto (bruto - comisión) en Stats/Inicio.
+function getComision(instrumento) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_COMISIONES) || "{}");
+    if (typeof saved[instrumento] === "number") return saved[instrumento];
+  } catch (e) {}
+  return 0;
+}
+function setComision(instrumento, value) {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(LS_COMISIONES) || "{}"); } catch (e) {}
+  saved[instrumento] = value;
+  localStorage.setItem(LS_COMISIONES, JSON.stringify(saved));
+}
+// Resultado neto de una operación: el € que registró el usuario, menos la
+// comisión de esa operación. Si no hay resultado en €, no hay neto tampoco.
+function netEUR(o) {
+  return typeof o.resultadoEUR === "number" ? o.resultadoEUR - (o.comision || 0) : undefined;
 }
 
 let db, auth, currentUser = null, unsubscribeOps = null;
@@ -874,7 +897,11 @@ function openOpDetail(id) {
     <div class="kv"><div class="k">Entrada</div><div>${o.entrada ?? '—'}</div></div>
     <div class="kv"><div class="k">Stop</div><div>${o.stop ?? '—'}</div></div>
     <div class="kv"><div class="k">TP1</div><div>${o.tp1 ?? '—'}</div></div>
-    <div class="kv"><div class="k">Resultado</div><div class="${(o.resultadoR||0)>0?'pos':(o.resultadoR||0)<0?'neg':''}" style="font-weight:800">${fmtR(o.resultadoR)}${typeof o.resultadoEUR==='number'?' · '+fmtEUR(o.resultadoEUR, true):''}</div></div>
+    <div class="kv"><div class="k">Resultado</div><div class="${(o.resultadoR||0)>0?'pos':(o.resultadoR||0)<0?'neg':''}" style="font-weight:800">${fmtR(o.resultadoR)}${typeof o.resultadoEUR==='number'?' · '+fmtEUR(o.resultadoEUR, true)+' bruto':''}</div></div>
+    ${o.comision ? `
+    <div class="kv"><div class="k">Comisión</div><div class="neg">-${fmtEUR(o.comision)}</div></div>
+    <div class="kv"><div class="k">Resultado neto</div><div class="${netEUR(o)>=0?'pos':'neg'}" style="font-weight:800">${fmtEUR(netEUR(o), true)}</div></div>
+    ` : ""}
     <div class="kv"><div class="k">Setup</div><div style="text-align:right;max-width:70%">${esc(o.setup||'—')}</div></div>
     <div class="kv"><div class="k">Gestión</div><div style="text-align:right;max-width:70%">${esc(o.gestion||'—')}</div></div>
   `}
@@ -908,7 +935,7 @@ function openOpForm(id, prefill) {
     <option value="real" ${(o.modo||state.modo)==='real'?'selected':''}>Real</option>
   </select>
   <label>Instrumento</label>
-  <select id="f_instrumento">
+  <select id="f_instrumento" onchange="${isEdit?'':'autofillComision()'}">
     <option value="DAX" ${o.instrumento==='DAX'?'selected':''}>DAX</option>
     <option value="SP500" ${o.instrumento==='SP500'?'selected':''}>S&P 500</option>
   </select>
@@ -925,7 +952,10 @@ function openOpForm(id, prefill) {
     <div><label>TP1 (objetivo 1:1)</label><input type="number" step="any" id="f_tp1" value="${o.tp1??''}"></div>
     <div><label>Resultado (R)</label><input type="number" step="any" id="f_resultadoR" value="${o.resultadoR??''}"></div>
   </div>
-  <label>Resultado en € (opcional)</label><input type="number" step="any" id="f_resultadoEUR" value="${o.resultadoEUR??''}">
+  <label>Resultado bruto en € (opcional)</label><input type="number" step="any" id="f_resultadoEUR" value="${o.resultadoEUR??''}">
+  <label>Comisión (€, entrada + salida ya sumadas)</label>
+  <input type="number" step="any" id="f_comision" value="${o.comision??(isEdit?'':getComision(o.instrumento||'DAX'))}">
+  <p class="small" style="margin-top:-8px;margin-bottom:12px">Se autorrellena según el mercado (ajústala en Más → Comisiones si cambia). El saldo y la evolución de la cuenta usan el resultado ya descontada esta comisión.</p>
   <label>Setup / bloques que confirmaron</label>
   <textarea id="f_setup" rows="2" placeholder="Ej: Spring LPS H1, OB M15 en discount, No Supply M5, sweep SSL + MSS, CRT Fase2 London KZ">${esc(o.setup||'')}</textarea>
   <label>Gestión de la operación</label>
@@ -939,6 +969,12 @@ function openOpForm(id, prefill) {
   <button class="btn btn-primary" style="margin-top:16px" onclick="submitOpForm('${id||''}')">${isEdit?'Guardar cambios':'Guardar operación'}</button>
   `;
   openModal(html);
+}
+
+function autofillComision() {
+  const instEl = document.getElementById("f_instrumento");
+  const comEl = document.getElementById("f_comision");
+  if (instEl && comEl) comEl.value = getComision(instEl.value);
 }
 
 function submitOpForm(id) {
@@ -956,6 +992,7 @@ function submitOpForm(id) {
     tp1: num("f_tp1"),
     resultadoR: num("f_resultadoR"),
     resultadoEUR: num("f_resultadoEUR"),
+    comision: num("f_comision") || 0,
     setup: val("f_setup"),
     gestion: val("f_gestion"),
     notas: val("f_notas"),
@@ -1066,7 +1103,7 @@ function balanceCardHtml(canvasId) {
   const ops = state.ops.filter(o => o.tipo !== "no-operacion" && (o.modo||"demo") === state.modo);
   const capitalInicial = getCapitalInicial(state.modo);
   const opsConEUR = ops.filter(o => typeof o.resultadoEUR === "number");
-  const sumEUR = opsConEUR.reduce((a,o) => a + o.resultadoEUR, 0);
+  const sumEUR = opsConEUR.reduce((a,o) => a + netEUR(o), 0);
   const saldoActual = capitalInicial + sumEUR;
   const rendPct = capitalInicial ? (sumEUR / capitalInicial) * 100 : 0;
   return `
@@ -1201,7 +1238,7 @@ function drawBalanceCurve(canvasId) {
   ctx.scale(dpr, dpr);
   ctx.clearRect(0,0,w,h);
   let cum = capitalInicial; const pts = [capitalInicial];
-  ops.forEach(o => { cum += o.resultadoEUR; pts.push(cum); });
+  ops.forEach(o => { cum += netEUR(o); pts.push(cum); });
   const min = Math.min(...pts, capitalInicial), max = Math.max(...pts, capitalInicial);
   const range = (max - min) || 1;
   const pad = 8;
@@ -1338,6 +1375,16 @@ function renderMas() {
   </div>
 
   <div class="card">
+    <h3>Comisiones por mercado</h3>
+    <div class="grid2">
+      <div><label>DAX (€, ida + vuelta)</label><input type="number" step="any" id="com_dax" value="${getComision('DAX')}"></div>
+      <div><label>S&amp;P 500 (€, ida + vuelta)</label><input type="number" step="any" id="com_sp500" value="${getComision('SP500')}"></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:12px" onclick="saveComisiones()">Guardar comisiones</button>
+    <p class="small" style="margin-top:10px">Comisión total de entrada + salida en ese mercado. Al registrar una operación nueva se rellena sola según el instrumento elegido (puedes cambiarla para esa operación en concreto). El saldo y la evolución de la cuenta descuentan siempre esta comisión del resultado bruto.</p>
+  </div>
+
+  <div class="card">
     <h3>Calculadora de posición</h3>
     <label>Capital de la cuenta (€)</label><input type="number" id="c_capital" value="10000">
     <label>Riesgo por operación (%)</label><input type="number" id="c_riesgo" value="1">
@@ -1419,6 +1466,7 @@ function seedTestData() {
       stop: instrumento === "DAX" ? (direccion==="LARGO"?18480:18520) : (direccion==="LARGO"?4990:5010),
       resultadoR: r,
       resultadoEUR: eur,
+      comision: getComision(instrumento) || (instrumento === "DAX" ? 4.5 : 5),
       setup, gestion: "Datos de prueba generados automáticamente.",
       notas: "Operación de prueba — bórrala desde Más > Datos de prueba cuando termines.",
       puntuacion: punt,
@@ -1445,6 +1493,14 @@ function saveCapitalInicial() {
   setCapitalInicial("demo", demo);
   setCapitalInicial("real", real);
   toast("Capital inicial guardado");
+}
+
+function saveComisiones() {
+  const dax = parseFloat(document.getElementById("com_dax").value) || 0;
+  const sp500 = parseFloat(document.getElementById("com_sp500").value) || 0;
+  setComision("DAX", dax);
+  setComision("SP500", sp500);
+  toast("Comisiones guardadas");
 }
 
 function calcPosicion() {
@@ -1481,8 +1537,8 @@ function calcRB() {
 }
 
 function exportCSV() {
-  const rows = [["fecha","hora","modo","tipo","instrumento","direccion","entrada","stop","tp1","resultadoR","resultadoEUR","puntuacion","setup","gestion","notas","motivoDescartada"]];
-  state.ops.forEach(o => rows.push([o.fecha,o.hora,o.modo||"demo",o.tipo,o.instrumento,o.direccion,o.entrada,o.stop,o.tp1,o.resultadoR,o.resultadoEUR,o.puntuacion,o.setup,o.gestion,o.notas,o.motivoDescartada].map(v=>v===undefined||v===null?"":(""+v).replace(/"/g,'""'))));
+  const rows = [["fecha","hora","modo","tipo","instrumento","direccion","entrada","stop","tp1","resultadoR","resultadoEUR","comision","resultadoNetoEUR","puntuacion","setup","gestion","notas","motivoDescartada"]];
+  state.ops.forEach(o => rows.push([o.fecha,o.hora,o.modo||"demo",o.tipo,o.instrumento,o.direccion,o.entrada,o.stop,o.tp1,o.resultadoR,o.resultadoEUR,o.comision,netEUR(o),o.puntuacion,o.setup,o.gestion,o.notas,o.motivoDescartada].map(v=>v===undefined||v===null?"":(""+v).replace(/"/g,'""'))));
   const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);

@@ -1,6 +1,6 @@
 {
-  "name": "Trading DAX/SP500 — Wyckoff · VSA · ICT · CRT",
-  "short_name": "Trading",
+  "name": "Okartap — Wyckoff · VSA · ICT · CRT",
+  "short_name": "Okartap",
   "description": "Diario, checklist de los 5 bloques y guía de referencia del sistema de trading intradía DAX/SP500.",
   "start_url": "./TradingOkar.html",
   "scope": "./",
