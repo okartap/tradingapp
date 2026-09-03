@@ -48,7 +48,7 @@ header.topbar{
   display:flex;align-items:center;justify-content:space-between;
 }
 header.topbar .brand{display:flex;align-items:center;gap:10px;}
-header.topbar .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(145deg,var(--bg2),var(--card));border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--gold);font-family:'Rajdhani',sans-serif;letter-spacing:0;flex-shrink:0;}
+header.topbar .logo{width:32px;height:32px;border-radius:9px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;display:block;}
 header.topbar .brand-text div:first-child{font-weight:700;font-size:14px;letter-spacing:1.6px;text-transform:uppercase;color:var(--silver);}
 header.topbar .brand-text div:last-child{font-size:10.5px;color:var(--muted);font-family:'Crimson Pro',Georgia,serif;font-style:italic;letter-spacing:.3px;margin-top:1px;}
 header.topbar .session-pill{font-size:10px;font-weight:600;padding:5px 10px;border-radius:20px;border:1px solid var(--border);color:var(--muted);letter-spacing:.3px;white-space:nowrap;}
@@ -174,10 +174,8 @@ tr:last-child td{border-bottom:none;}
 
 #loginScreen,#setupScreen{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:26px;max-width:420px;margin:0 auto;}
 #loginScreen .logo-big,#setupScreen .logo-big{
-  width:88px;height:88px;border-radius:22px;
-  background:linear-gradient(145deg,var(--bg2),var(--card));border:1px solid var(--border);
-  display:flex;align-items:center;justify-content:center;
-  font-weight:700;font-size:15px;letter-spacing:2px;color:var(--gold);
+  width:88px;height:88px;border-radius:22px;object-fit:cover;
+  border:1px solid var(--border);display:block;
   margin:0 auto 20px;box-shadow:0 0 0 1px rgba(255,255,255,.03),0 8px 28px rgba(0,0,0,.45);
 }
 .center{text-align:center;}
@@ -192,7 +190,7 @@ canvas{width:100%;display:block;}
 
 <!-- ============ SETUP (Firebase config) ============ -->
 <div id="setupScreen" class="hidden">
-  <div class="logo-big">OK</div>
+  <img class="logo-big" src="icon-192.png" alt="Okartap">
   <h1 class="center">Configurar Okartap</h1>
   <p class="center">Pega aquí la configuración de tu proyecto Firebase (Consola Firebase → ⚙️ Configuración del proyecto → tus apps → SDK setup and configuration → "Config"). Solo hace falta hacerlo una vez en este dispositivo.</p>
   <label>Configuración Firebase (pega el bloque completo)</label>
@@ -203,7 +201,7 @@ canvas{width:100%;display:block;}
 
 <!-- ============ LOGIN ============ -->
 <div id="loginScreen" class="hidden">
-  <div class="logo-big">OK</div>
+  <img class="logo-big" src="icon-192.png" alt="Okartap">
   <h1 class="center">Okartap</h1>
   <p class="center">Wyckoff · VSA · O/D · Elliott · ICT · CRT</p>
   <label>Email</label>
@@ -219,10 +217,10 @@ canvas{width:100%;display:block;}
 <div id="app" class="hidden">
   <header class="topbar">
     <div class="brand">
-      <div class="logo">OK</div>
+      <img class="logo" src="icon-192.png" alt="Okartap">
       <div class="brand-text">
         <div>Okartap</div>
-        <div id="topSub">DAX · SP500 intradía</div>
+        <div id="topSub">Nasdaq · DAX · SP500 · Oro · DJ</div>
       </div>
     </div>
     <div class="session-pill" id="sessionPill">—</div>
@@ -250,11 +248,9 @@ canvas{width:100%;display:block;}
 
 <div class="toast" id="toast"></div>
 
-<!-- MODO FIREBASE (desactivado temporalmente, ver nota en el bloque de JS principal):
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
--->
 <script>
 // =====================================================================
 // data.js — Contenido del sistema (Manual Definitivo de Trading + ICT Reference)
@@ -513,11 +509,18 @@ const GESTION_DOS_ORDENES = "Order 1 cierra al alcanzar ratio 1:1 (asegura benef
 const REGLA_TOQUE_ZONA = "Toca la zona → espero que cierre la vela → si cierra a favor, entro en la apertura de la siguiente vela, stop bajo el mínimo de la vela que tocó la zona.";
 const REGLA_ZONAS_TOQUES = "Las zonas se debilitan con cada toque: reducir tamaño en el 2º toque, evitar operar a partir del 3er toque.";
 
-// Valor de punto por instrumento (referencia orientativa para la calculadora — configurable por el usuario)
+// Mercados disponibles en la app. El valor por punto y la comisión reales de
+// cada uno se configuran en Más (varían mucho según el bróker/tamaño de
+// contrato) — aquí solo se guarda el nombre a mostrar y, orientativo, en qué
+// franja horaria suele operarse cada uno.
 const INSTRUMENTOS = {
-  DAX: { nombre: "DAX 40", valorPuntoDefault: 1, sesion: "London Kill Zone (08:20–10:00h)" },
-  SP500: { nombre: "S&P 500", valorPuntoDefault: 1, sesion: "NY Kill Zone (14:40–16:00h)" },
+  NASDAQ: { nombre: "Nasdaq 100", corto: "Nasdaq", sesion: "NY Kill Zone (14:40–16:00h)" },
+  DAX: { nombre: "DAX 40", corto: "DAX", sesion: "London Kill Zone (08:20–10:00h)" },
+  SP500: { nombre: "S&P 500", corto: "S&P 500", sesion: "NY Kill Zone (14:40–16:00h)" },
+  ORO: { nombre: "Oro (XAUUSD)", corto: "Oro", sesion: "London / NY Kill Zone" },
+  DOWJONES: { nombre: "Dow Jones", corto: "Dow Jones", sesion: "NY Kill Zone (14:40–16:00h)" },
 };
+const DEFAULT_INSTRUMENTO = "NASDAQ";
 
 </script>
 <script>
@@ -529,10 +532,18 @@ const LS_FB_CONFIG = "ts_fbConfig";
 const LS_LAST_TAB = "ts_lastTab";
 const LS_CAPITAL = "ts_capitalInicial";
 const LS_COMISIONES = "ts_comisiones";
+const LS_VALORPUNTO = "ts_valorPunto";
 
-// Config del proyecto Firebase "TradingOkar" — incrustada para que la app
-// funcione directamente en cualquier dispositivo sin pantalla de configuración.
-// No es un dato secreto: la seguridad la dan las reglas de Firestore, no ocultar esto.
+// Config de Firebase — incrustada para que la app funcione directamente en
+// cualquier dispositivo sin pantalla de configuración. No es un dato secreto:
+// la seguridad la dan las reglas de Firestore, no ocultar esto.
+//
+// PENDIENTE: esto sigue apuntando al proyecto propio "tradingokar". Según lo
+// acordado, TradingOkar pasará a compartir la base de datos de GestInmo
+// (proyecto "gestinmo-13c65") — en cuanto se reciba esa config, sustituir
+// estos 6 valores por los del proyecto de GestInmo (nada más en el código
+// necesita cambiar: la colección "trading_operaciones" ya está preparada
+// para convivir con las colecciones de GestInmo en la misma base de datos).
 const DEFAULT_FB_CONFIG = {
   apiKey: "AIzaSyB4X-xA94zts2nUiVYaSeX9MnisdSlhWTw",
   authDomain: "tradingokar.firebaseapp.com",
@@ -572,60 +583,148 @@ function setComision(instrumento, value) {
   saved[instrumento] = value;
   localStorage.setItem(LS_COMISIONES, JSON.stringify(saved));
 }
+// Valor de un punto (€) por mercado — depende del bróker/tamaño de contrato,
+// por eso es configurable en Más → "Valor por punto por mercado", igual que
+// la comisión. Por defecto 1€/punto hasta que el usuario lo ajuste.
+function getValorPunto(instrumento) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_VALORPUNTO) || "{}");
+    if (typeof saved[instrumento] === "number") return saved[instrumento];
+  } catch (e) {}
+  return 1;
+}
+function setValorPunto(instrumento, value) {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(LS_VALORPUNTO) || "{}"); } catch (e) {}
+  saved[instrumento] = value;
+  localStorage.setItem(LS_VALORPUNTO, JSON.stringify(saved));
+}
 // Resultado neto de una operación: el € que registró el usuario, menos la
 // comisión de esa operación. Si no hay resultado en €, no hay neto tampoco.
 function netEUR(o) {
   return typeof o.resultadoEUR === "number" ? o.resultadoEUR - (o.comision || 0) : undefined;
 }
 
+// Calcula puntos / R / € a partir de entrada, stop (opcional), salida y
+// contratos — la app hace la resta, el usuario no tiene que calcular nada.
+// "puntos" es siempre el movimiento puro del precio (nunca se multiplica por
+// los contratos: para eso está el resultado en €, que sí los tiene en cuenta).
+function calcResultado({ instrumento, direccion, entrada, stop, salida, contratos }) {
+  const out = { puntos: null, resultadoR: null, resultadoEUR: null, comision: getComision(instrumento) || 0 };
+  if (typeof entrada !== "number" || typeof salida !== "number") return out;
+  const signo = direccion === "CORTO" ? -1 : 1;
+  out.puntos = signo * (salida - entrada);
+  const contratosN = typeof contratos === "number" && contratos > 0 ? contratos : 1;
+  out.resultadoEUR = out.puntos * getValorPunto(instrumento) * contratosN;
+  if (typeof stop === "number") {
+    const riesgoPuntos = Math.abs(entrada - stop);
+    if (riesgoPuntos > 0) out.resultadoR = out.puntos / riesgoPuntos;
+  }
+  return out;
+}
+
 let db, auth, currentUser = null, unsubscribeOps = null;
 let state = { ops: [], tab: "dashboard", diarioFilter: "todas", diarioModo: "todas", diarioSearch: "", checklist: {}, modo: "demo" };
 
 // =======================================================================
-// MODO LOCAL (temporal, mientras se diseña la app)
+// MODO NUBE: login + Firestore, colección compartida con GestInmo
 // -----------------------------------------------------------------------
-// A petición expresa (27/08/2026): mientras se está diseñando la app, sin
-// login y sin Firestore — todo se guarda en este dispositivo (localStorage),
-// igual que GestInmo. Así se puede ver y probar en cualquier sitio (incluido
-// el visor de Claude) sin depender de que Firebase responda.
+// Reactivado (30/08/2026) según el plan acordado: TradingOkar y GestInmo
+// siguen siendo apps independientes, pero comparten la misma base de datos
+// Firebase (por ahora sigue apuntando al proyecto propio "tradingokar" —
+// ver nota junto a DEFAULT_FB_CONFIG más arriba — pendiente de swap al
+// proyecto "gestinmo-13c65" en cuanto llegue esa configuración).
 //
-// ANTES DE OPERAR EN REAL: reactivar el inicio de sesión + Firestore. El
-// código anterior (login por email/contraseña + Firestore por usuario) se
-// deja comentado más abajo, en el bloque "MODO FIREBASE (desactivado
-// temporalmente)", listo para restaurarlo sin reescribirlo desde cero.
+// Los datos viven en una colección PLANA y propia, "trading_operaciones",
+// separada de las colecciones de GestInmo, aislada por el campo "uid" de
+// cada documento (nunca "users/{uid}/operaciones" — ese path ya no se usa).
 // =======================================================================
-const LS_OPS = "ts_operaciones";
-
-function loadOpsFromLocal() {
-  try { return JSON.parse(localStorage.getItem(LS_OPS) || "[]"); }
-  catch (e) { return []; }
+function parseFirebaseConfigInput(raw) {
+  // Acepta tanto JSON puro como el snippet tal cual lo copia Firebase desde la consola,
+  // p.ej.: const firebaseConfig = { apiKey: "...", projectId: "...", ... };
+  let cleaned = raw.trim();
+  cleaned = cleaned.replace(/^\s*(const|var|let)\s+\w+\s*=\s*/, "").replace(/;\s*$/, "");
+  const m = cleaned.match(/\{[\s\S]*\}/);
+  if (m) cleaned = m[0];
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    return new Function("return (" + cleaned + ")")();
+  }
 }
-function persistOps() { localStorage.setItem(LS_OPS, JSON.stringify(state.ops)); }
-function sortOps() {
-  state.ops.sort((a, b) => {
-    if (a.fecha !== b.fecha) return a.fecha < b.fecha ? 1 : -1;
-    return (a.hora || "") < (b.hora || "") ? 1 : -1;
+
+function saveSetup() {
+  const raw = document.getElementById("fbConfigInput").value.trim();
+  const errEl = document.getElementById("setupErr");
+  try {
+    const cfg = parseFirebaseConfigInput(raw);
+    if (!cfg.apiKey || !cfg.projectId) throw new Error("faltan campos");
+    localStorage.setItem(LS_FB_CONFIG, JSON.stringify(cfg));
+    errEl.textContent = "";
+    initFirebase(cfg);
+  } catch (e) {
+    errEl.textContent = "No se ha podido leer la configuración. Copia el bloque completo tal cual lo da Firebase (incluye las llaves { }).";
+  }
+}
+
+function initFirebase(cfg) {
+  if (!firebase.apps.length) firebase.initializeApp(cfg);
+  auth = firebase.auth();
+  db = firebase.firestore();
+  try { db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch (e) {}
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      currentUser = user;
+      show("app");
+      attachOpsListener();
+      startClock();
+      goTab(localStorage.getItem(LS_LAST_TAB) || "dashboard");
+    } else {
+      currentUser = null;
+      if (unsubscribeOps) unsubscribeOps();
+      show("loginScreen");
+    }
   });
 }
-function genId() { return "op_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
-function refreshOpsView() { sortOps(); persistOps(); render(); }
+
+function doLogin() {
+  const email = document.getElementById("loginEmail").value.trim();
+  const pass = document.getElementById("loginPass").value;
+  const errEl = document.getElementById("loginErr");
+  errEl.textContent = "";
+  if (!email || !pass) { errEl.textContent = "Introduce email y contraseña."; return; }
+  auth.signInWithEmailAndPassword(email, pass).catch((e) => {
+    errEl.textContent = "Credenciales incorrectas o usuario no existe.";
+  });
+}
+
+function doLogout() {
+  auth.signOut();
+}
+
+function opsCol() {
+  return db.collection("trading_operaciones");
+}
+
+function attachOpsListener() {
+  if (unsubscribeOps) unsubscribeOps();
+  unsubscribeOps = opsCol().where("uid", "==", currentUser.uid)
+    .orderBy("fecha", "desc").orderBy("hora", "desc")
+    .onSnapshot((snap) => {
+      state.ops = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      render();
+    }, (err) => {
+      toast("Error al leer datos: " + err.message);
+    });
+}
 
 function saveOp(op, id) {
-  const now = new Date().toISOString();
-  if (id) {
-    const i = state.ops.findIndex((o) => o.id === id);
-    if (i >= 0) state.ops[i] = { ...state.ops[i], ...op, updatedAt: now };
-  } else {
-    state.ops.push({ id: genId(), ...op, createdAt: now, updatedAt: now });
-  }
-  refreshOpsView();
-  return Promise.resolve();
+  const payload = { ...op, uid: currentUser.uid, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  if (id) return opsCol().doc(id).update(payload);
+  payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+  return opsCol().add(payload);
 }
-function deleteOp(id) {
-  state.ops = state.ops.filter((o) => o.id !== id);
-  refreshOpsView();
-  return Promise.resolve();
-}
+function deleteOp(id) { return opsCol().doc(id).delete(); }
 
 // ---------------------------------------------------------------------
 // BOOT
@@ -633,13 +732,27 @@ function deleteOp(id) {
 window.addEventListener("DOMContentLoaded", boot);
 
 function boot() {
-  state.ops = loadOpsFromLocal();
-  sortOps();
-  show("app");
-  startClock();
-  goTab(localStorage.getItem(LS_LAST_TAB) || "dashboard");
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+  let cfg = DEFAULT_FB_CONFIG;
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_FB_CONFIG) || "null");
+    if (saved && saved.apiKey) cfg = saved;
+  } catch (e) {}
+  if (cfg && cfg.apiKey) {
+    try {
+      initFirebase(cfg);
+    } catch (e) {
+      // El SDK de Firebase no ha cargado (típicamente: sin conexión a
+      // internet, o el visor/entorno actual bloquea gstatic.com) — se
+      // muestra un aviso claro en vez de dejar la pantalla en negro.
+      show("loginScreen");
+      const err = document.getElementById("loginErr");
+      if (err) err.textContent = "No se ha podido cargar Firebase. Comprueba tu conexión a internet y recarga la página (si estás en un visor/previsualización, prueba en la app real).";
+    }
+  } else {
+    show("setupScreen");
   }
 }
 
@@ -650,11 +763,6 @@ function show(id) {
   document.getElementById("tabbar").classList.toggle("hidden", id !== "app");
   document.getElementById("fab").classList.toggle("hidden", id !== "app");
 }
-
-// MODO FIREBASE (desactivado temporalmente): el código de login +
-// Firestore que estaba aquí se guardó tal cual, sin tocar, en un bloque
-// inerte al final del archivo (id="firebase-legacy-code") para poder
-// restaurarlo cuando la app esté lista para producción.
 
 // ---------------------------------------------------------------------
 // NAV
@@ -670,6 +778,7 @@ function goTab(tab) {
 }
 
 function render() {
+  if (!currentUser) return;
   const v = document.getElementById("view");
   if (state.tab === "dashboard") v.innerHTML = renderDashboard();
   else if (state.tab === "diario") v.innerHTML = renderDiario();
@@ -845,11 +954,10 @@ function emptyState(title, sub) {
 function renderDiario() {
   let ops = state.ops;
   const f = state.diarioFilter;
-  if (f === "dax") ops = ops.filter(o => o.instrumento === "DAX");
-  else if (f === "sp500") ops = ops.filter(o => o.instrumento === "SP500");
-  else if (f === "ganadas") ops = ops.filter(o => o.tipo !== "no-operacion" && (o.resultadoR||0) > 0);
+  if (f === "ganadas") ops = ops.filter(o => o.tipo !== "no-operacion" && (o.resultadoR||0) > 0);
   else if (f === "perdidas") ops = ops.filter(o => o.tipo !== "no-operacion" && (o.resultadoR||0) < 0);
   else if (f === "descartadas") ops = ops.filter(o => o.tipo === "no-operacion");
+  else if (Object.keys(INSTRUMENTOS).includes(f)) ops = ops.filter(o => o.instrumento === f);
   const dm = state.diarioModo;
   if (dm === "real") ops = ops.filter(o => (o.modo||"demo") === "real");
   else if (dm === "demo") ops = ops.filter(o => (o.modo||"demo") === "demo");
@@ -858,7 +966,9 @@ function renderDiario() {
     ops = ops.filter(o => (o.setup||"").toLowerCase().includes(q) || (o.notas||"").toLowerCase().includes(q));
   }
   const chips = [
-    ["todas","Todas"],["dax","DAX"],["sp500","SP500"],["ganadas","Ganadas"],["perdidas","Perdidas"],["descartadas","Descartadas"]
+    ["todas","Todas"],
+    ...Object.keys(INSTRUMENTOS).map(k => [k, INSTRUMENTOS[k].corto]),
+    ["ganadas","Ganadas"],["perdidas","Perdidas"],["descartadas","Descartadas"]
   ];
   const modoChips = [["todas","Todas"],["demo","Demo"],["real","Real"]];
   return `
@@ -896,7 +1006,10 @@ function openOpDetail(id) {
   ` : `
     <div class="kv"><div class="k">Entrada</div><div>${o.entrada ?? '—'}</div></div>
     <div class="kv"><div class="k">Stop</div><div>${o.stop ?? '—'}</div></div>
-    <div class="kv"><div class="k">TP1</div><div>${o.tp1 ?? '—'}</div></div>
+    <div class="kv"><div class="k">Salida</div><div>${o.salida ?? '—'}</div></div>
+    ${o.tp1!==undefined ? `<div class="kv"><div class="k">TP1</div><div>${o.tp1}</div></div>` : ""}
+    <div class="kv"><div class="k">Contratos</div><div>${o.contratos ?? '—'}</div></div>
+    ${typeof o.puntos==='number' ? `<div class="kv"><div class="k">Puntos</div><div class="${o.puntos>0?'pos':o.puntos<0?'neg':''}">${(o.puntos>0?'+':'')+o.puntos.toFixed(2)} pts</div></div>` : ""}
     <div class="kv"><div class="k">Resultado</div><div class="${(o.resultadoR||0)>0?'pos':(o.resultadoR||0)<0?'neg':''}" style="font-weight:800">${fmtR(o.resultadoR)}${typeof o.resultadoEUR==='number'?' · '+fmtEUR(o.resultadoEUR, true)+' bruto':''}</div></div>
     ${o.comision ? `
     <div class="kv"><div class="k">Comisión</div><div class="neg">-${fmtEUR(o.comision)}</div></div>
@@ -935,27 +1048,23 @@ function openOpForm(id, prefill) {
     <option value="real" ${(o.modo||state.modo)==='real'?'selected':''}>Real</option>
   </select>
   <label>Instrumento</label>
-  <select id="f_instrumento" onchange="${isEdit?'':'autofillComision()'}">
-    <option value="DAX" ${o.instrumento==='DAX'?'selected':''}>DAX</option>
-    <option value="SP500" ${o.instrumento==='SP500'?'selected':''}>S&P 500</option>
+  <select id="f_instrumento" oninput="updateOpPreview()">
+    ${Object.keys(INSTRUMENTOS).map(k => `<option value="${k}" ${(o.instrumento||DEFAULT_INSTRUMENTO)===k?'selected':''}>${INSTRUMENTOS[k].nombre}</option>`).join("")}
   </select>
   <label>Dirección</label>
-  <select id="f_direccion">
+  <select id="f_direccion" oninput="updateOpPreview()">
     <option value="LARGO" ${o.direccion==='LARGO'?'selected':''}>Largo</option>
     <option value="CORTO" ${o.direccion==='CORTO'?'selected':''}>Corto</option>
   </select>
   <div class="grid2">
-    <div><label>Entrada</label><input type="number" step="any" id="f_entrada" value="${o.entrada??''}"></div>
-    <div><label>Stop</label><input type="number" step="any" id="f_stop" value="${o.stop??''}"></div>
+    <div><label>Entrada</label><input type="number" step="any" inputmode="decimal" min="0" id="f_entrada" value="${o.entrada??''}" oninput="updateOpPreview()"></div>
+    <div><label>Stop (opcional, para el R)</label><input type="number" step="any" inputmode="decimal" min="0" id="f_stop" value="${o.stop??''}" oninput="updateOpPreview()"></div>
   </div>
   <div class="grid2">
-    <div><label>TP1 (objetivo 1:1)</label><input type="number" step="any" id="f_tp1" value="${o.tp1??''}"></div>
-    <div><label>Resultado (R)</label><input type="number" step="any" id="f_resultadoR" value="${o.resultadoR??''}"></div>
+    <div><label>Salida</label><input type="number" step="any" inputmode="decimal" min="0" id="f_salida" value="${o.salida??''}" oninput="updateOpPreview()"></div>
+    <div><label>Contratos</label><input type="number" step="any" inputmode="decimal" min="0" id="f_contratos" value="${o.contratos??1}" oninput="updateOpPreview()"></div>
   </div>
-  <label>Resultado bruto en € (opcional)</label><input type="number" step="any" id="f_resultadoEUR" value="${o.resultadoEUR??''}">
-  <label>Comisión (€, entrada + salida ya sumadas)</label>
-  <input type="number" step="any" id="f_comision" value="${o.comision??(isEdit?'':getComision(o.instrumento||'DAX'))}">
-  <p class="small" style="margin-top:-8px;margin-bottom:12px">Se autorrellena según el mercado (ajústala en Más → Comisiones si cambia). El saldo y la evolución de la cuenta usan el resultado ya descontada esta comisión.</p>
+  <div class="card tight" id="f_preview" style="margin:2px 0 14px"></div>
   <label>Setup / bloques que confirmaron</label>
   <textarea id="f_setup" rows="2" placeholder="Ej: Spring LPS H1, OB M15 en discount, No Supply M5, sweep SSL + MSS, CRT Fase2 London KZ">${esc(o.setup||'')}</textarea>
   <label>Gestión de la operación</label>
@@ -969,17 +1078,45 @@ function openOpForm(id, prefill) {
   <button class="btn btn-primary" style="margin-top:16px" onclick="submitOpForm('${id||''}')">${isEdit?'Guardar cambios':'Guardar operación'}</button>
   `;
   openModal(html);
+  updateOpPreview();
 }
 
-function autofillComision() {
-  const instEl = document.getElementById("f_instrumento");
-  const comEl = document.getElementById("f_comision");
-  if (instEl && comEl) comEl.value = getComision(instEl.value);
+// Lee los campos del formulario (si existen) y calcula puntos/R/€ — se usa
+// tanto para la vista previa en vivo como al guardar, así nunca se desincronizan.
+function readOpFormResultado() {
+  const val = (sel) => { const el = document.getElementById(sel); return el ? el.value : ""; };
+  const num = (sel) => { const v = val(sel); return v === "" ? undefined : parseFloat(v); };
+  return calcResultado({
+    instrumento: val("f_instrumento"),
+    direccion: val("f_direccion"),
+    entrada: num("f_entrada"),
+    stop: num("f_stop"),
+    salida: num("f_salida"),
+    contratos: num("f_contratos"),
+  });
+}
+
+function updateOpPreview() {
+  const el = document.getElementById("f_preview");
+  if (!el) return;
+  const r = readOpFormResultado();
+  if (r.puntos === null) {
+    el.innerHTML = `<p class="small" style="margin:0">Rellena entrada y salida para ver los puntos, el R (si pones el stop) y el resultado en € calculados solos.</p>`;
+    return;
+  }
+  const puntosStr = (r.puntos > 0 ? "+" : "") + r.puntos.toFixed(2) + " pts";
+  el.innerHTML = `
+    <div class="kv"><div class="k">Puntos</div><div class="${r.puntos>0?'pos':r.puntos<0?'neg':''}" style="font-weight:700">${puntosStr}</div></div>
+    <div class="kv"><div class="k">Resultado (R)</div><div>${r.resultadoR===null?'— (pon el stop)':fmtR(r.resultadoR)}</div></div>
+    <div class="kv"><div class="k">Resultado bruto</div><div class="${r.resultadoEUR>0?'pos':r.resultadoEUR<0?'neg':''}" style="font-weight:700">${fmtEUR(r.resultadoEUR, true)}</div></div>
+    ${r.comision ? `<div class="kv"><div class="k">Comisión (${INSTRUMENTOS[document.getElementById('f_instrumento').value]?.nombre||''})</div><div class="neg">-${fmtEUR(r.comision)}</div></div>` : ""}
+  `;
 }
 
 function submitOpForm(id) {
   const val = (sel) => document.getElementById(sel).value;
   const num = (sel) => { const v = val(sel); return v === "" ? null : parseFloat(v); };
+  const calc = readOpFormResultado();
   const op = {
     tipo: "operacion",
     fecha: val("f_fecha"),
@@ -989,10 +1126,12 @@ function submitOpForm(id) {
     direccion: val("f_direccion"),
     entrada: num("f_entrada"),
     stop: num("f_stop"),
-    tp1: num("f_tp1"),
-    resultadoR: num("f_resultadoR"),
-    resultadoEUR: num("f_resultadoEUR"),
-    comision: num("f_comision") || 0,
+    salida: num("f_salida"),
+    contratos: num("f_contratos") || 1,
+    puntos: calc.puntos,
+    resultadoR: calc.resultadoR,
+    resultadoEUR: calc.resultadoEUR,
+    comision: calc.comision,
     setup: val("f_setup"),
     gestion: val("f_gestion"),
     notas: val("f_notas"),
@@ -1088,7 +1227,7 @@ function saveChecklistDescarte() {
     tipo: "no-operacion",
     fecha: todayStr(), hora: nowHM(),
     modo: state.modo,
-    instrumento: "DAX",
+    instrumento: DEFAULT_INSTRUMENTO,
     puntuacion: blocksOk,
     bloques: detail,
     motivoDescartada: motivo || "",
@@ -1118,7 +1257,7 @@ function balanceCardHtml(canvasId) {
         <div class="stat"><div class="v ${rendPct>=0?'pos':'neg'}">${rendPct>=0?'+':''}${rendPct.toFixed(1)}%</div><div class="l">Rendimiento</div></div>
       </div>
       <canvas id="${canvasId}" height="140"></canvas>
-    ` : emptyState("Sin datos en €", "Rellena el campo \"Resultado en €\" al registrar tus operaciones para ver aquí la evolución real de tu cuenta.")}
+    ` : emptyState("Sin datos en €", "Registra entrada, stop y salida en tus operaciones para ver aquí la evolución real de tu cuenta.")}
   </div>`;
 }
 
@@ -1367,32 +1506,40 @@ function renderMas() {
   <div class="card">
     <h3>Capital inicial (para la evolución de la cuenta)</h3>
     <div class="grid2">
-      <div><label>Demo (€)</label><input type="number" step="any" id="cap_demo" value="${getCapitalInicial('demo')}"></div>
-      <div><label>Real (€)</label><input type="number" step="any" id="cap_real" value="${getCapitalInicial('real')}"></div>
+      <div><label>Demo (€)</label><input type="number" step="any" inputmode="decimal" min="0" id="cap_demo" value="${getCapitalInicial('demo')}"></div>
+      <div><label>Real (€)</label><input type="number" step="any" inputmode="decimal" min="0" id="cap_real" value="${getCapitalInicial('real')}"></div>
     </div>
     <button class="btn btn-primary" style="margin-top:12px" onclick="saveCapitalInicial()">Guardar capital inicial</button>
-    <p class="small" style="margin-top:10px">Se usa en Stats para dibujar la evolución real de tu saldo en euros, sumando el "Resultado en €" de cada operación a partir de este punto de partida. Se guarda en este dispositivo.</p>
+    <p class="small" style="margin-top:10px">Se usa en Stats para dibujar la evolución real de tu saldo en euros, sumando el resultado de cada operación a partir de este punto de partida. Se guarda en este dispositivo.</p>
+  </div>
+
+  <div class="card">
+    <h3>Valor por punto por mercado</h3>
+    <div class="grid2">
+      ${Object.keys(INSTRUMENTOS).map(k => `<div><label>${INSTRUMENTOS[k].nombre} (€/punto)</label><input type="number" step="any" inputmode="decimal" min="0" id="vp_${k}" value="${getValorPunto(k)}"></div>`).join("")}
+    </div>
+    <button class="btn btn-primary" style="margin-top:12px" onclick="saveValorPunto()">Guardar valor por punto</button>
+    <p class="small" style="margin-top:10px">Cuánto vale cada punto de movimiento en ese mercado, con 1 contrato — depende de tu bróker y del tamaño de contrato que uses. Con esto la app calcula sola el resultado en € de cada operación (puntos × valor por punto × nº de contratos).</p>
   </div>
 
   <div class="card">
     <h3>Comisiones por mercado</h3>
     <div class="grid2">
-      <div><label>DAX (€, ida + vuelta)</label><input type="number" step="any" id="com_dax" value="${getComision('DAX')}"></div>
-      <div><label>S&amp;P 500 (€, ida + vuelta)</label><input type="number" step="any" id="com_sp500" value="${getComision('SP500')}"></div>
+      ${Object.keys(INSTRUMENTOS).map(k => `<div><label>${INSTRUMENTOS[k].nombre} (€, ida + vuelta)</label><input type="number" step="any" inputmode="decimal" min="0" id="com_${k}" value="${getComision(k)}"></div>`).join("")}
     </div>
     <button class="btn btn-primary" style="margin-top:12px" onclick="saveComisiones()">Guardar comisiones</button>
-    <p class="small" style="margin-top:10px">Comisión total de entrada + salida en ese mercado. Al registrar una operación nueva se rellena sola según el instrumento elegido (puedes cambiarla para esa operación en concreto). El saldo y la evolución de la cuenta descuentan siempre esta comisión del resultado bruto.</p>
+    <p class="small" style="margin-top:10px">Comisión total de entrada + salida en ese mercado. Se aplica sola a cada operación según el instrumento elegido — ya no se pide al registrar la operación. El saldo y la evolución de la cuenta descuentan siempre esta comisión del resultado bruto.</p>
   </div>
 
   <div class="card">
     <h3>Calculadora de posición</h3>
-    <label>Capital de la cuenta (€)</label><input type="number" id="c_capital" value="10000">
-    <label>Riesgo por operación (%)</label><input type="number" id="c_riesgo" value="1">
+    <label>Capital de la cuenta (€)</label><input type="number" inputmode="decimal" min="0" id="c_capital" value="10000">
+    <label>Riesgo por operación (%)</label><input type="number" inputmode="decimal" min="0" id="c_riesgo" value="1">
     <div class="grid2">
-      <div><label>Precio entrada</label><input type="number" step="any" id="c_entrada"></div>
-      <div><label>Precio stop</label><input type="number" step="any" id="c_stop"></div>
+      <div><label>Precio entrada</label><input type="number" step="any" inputmode="decimal" min="0" id="c_entrada"></div>
+      <div><label>Precio stop</label><input type="number" step="any" inputmode="decimal" min="0" id="c_stop"></div>
     </div>
-    <label>Valor por punto (€/pt del contrato)</label><input type="number" step="any" id="c_valorpunto" value="1">
+    <label>Valor por punto (€/pt del contrato)</label><input type="number" step="any" inputmode="decimal" min="0" id="c_valorpunto" value="1">
     <button class="btn btn-primary" style="margin-top:12px" onclick="calcPosicion()">Calcular</button>
     <div id="c_result" style="margin-top:12px"></div>
   </div>
@@ -1400,9 +1547,9 @@ function renderMas() {
   <div class="card">
     <h3>Calculadora Ratio R:B</h3>
     <div class="grid3">
-      <div><label>Entrada</label><input type="number" step="any" id="rb_entrada"></div>
-      <div><label>Stop</label><input type="number" step="any" id="rb_stop"></div>
-      <div><label>Objetivo</label><input type="number" step="any" id="rb_tp"></div>
+      <div><label>Entrada</label><input type="number" step="any" inputmode="decimal" min="0" id="rb_entrada"></div>
+      <div><label>Stop</label><input type="number" step="any" inputmode="decimal" min="0" id="rb_stop"></div>
+      <div><label>Objetivo</label><input type="number" step="any" inputmode="decimal" min="0" id="rb_tp"></div>
     </div>
     <button class="btn btn-primary" style="margin-top:12px" onclick="calcRB()">Calcular ratio</button>
     <div id="rb_result" style="margin-top:12px"></div>
@@ -1411,7 +1558,8 @@ function renderMas() {
   <div class="card">
     <h3>Datos y cuenta</h3>
     <button class="btn btn-ghost" onclick="exportCSV()">Exportar diario a CSV</button>
-    <p class="small" style="margin-top:12px">Modo local (temporal, mientras se diseña la app): tus datos se guardan en este dispositivo, sin necesidad de conexión ni usuario. Antes de operar en real se reactivará el inicio de sesión y la copia en la nube (Firebase).</p>
+    <p class="small" style="margin-top:12px">Conectado como ${currentUser ? currentUser.email : "—"}. Tus datos se guardan en la nube (Firebase), en la colección "trading_operaciones".</p>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="doLogout()">Cerrar sesión</button>
   </div>
 
   <div class="card">
@@ -1425,7 +1573,7 @@ function renderMas() {
 
   <div class="card">
     <h3>Acerca de</h3>
-    <p>Sistema Wyckoff · VSA · Oferta y Demanda · Elliott · Background · ICT · CRT para operativa intradía en DAX y S&amp;P 500. Basado en la metodología de Jordi Martí (jorditrading.com).</p>
+    <p>Sistema Wyckoff · VSA · Oferta y Demanda · Elliott · Background · ICT · CRT para operativa intradía en Nasdaq, DAX, S&amp;P 500, Oro y Dow Jones. Basado en la metodología de Jordi Martí (jorditrading.com).</p>
   </div>
   `;
 }
@@ -1453,38 +1601,33 @@ function seedTestData() {
     [8,  "real", "DAX",   "CORTO", -1.0, -100, "Stop ajustado, movimiento en contra rápido", 3],
     [4,  "real", "SP500", "LARGO", 1.9,  190, "OB M15 + No Supply, gestión con parciales", 5],
   ];
-  const now = new Date().toISOString();
-  filas.forEach(([dias, modo, instrumento, direccion, r, eur, setup, punt]) => {
-    state.ops.push({
-      id: genId(),
-      _test: true,
-      tipo: "operacion",
-      fecha: fechaHace(dias),
-      hora: "10:" + String(10 + dias % 40).padStart(2,"0"),
-      modo, instrumento, direccion,
-      entrada: instrumento === "DAX" ? 18500 : 5000,
-      stop: instrumento === "DAX" ? (direccion==="LARGO"?18480:18520) : (direccion==="LARGO"?4990:5010),
-      resultadoR: r,
-      resultadoEUR: eur,
-      comision: getComision(instrumento) || (instrumento === "DAX" ? 4.5 : 5),
-      setup, gestion: "Datos de prueba generados automáticamente.",
-      notas: "Operación de prueba — bórrala desde Más > Datos de prueba cuando termines.",
-      puntuacion: punt,
-      createdAt: now,
-      updatedAt: now,
-    });
-  });
-  refreshOpsView();
-  toast(filas.length + " operaciones de prueba insertadas");
+  const ops = filas.map(([dias, modo, instrumento, direccion, r, eur, setup, punt]) => ({
+    _test: true,
+    tipo: "operacion",
+    fecha: fechaHace(dias),
+    hora: "10:" + String(10 + dias % 40).padStart(2,"0"),
+    modo, instrumento, direccion,
+    entrada: instrumento === "DAX" ? 18500 : 5000,
+    stop: instrumento === "DAX" ? (direccion==="LARGO"?18480:18520) : (direccion==="LARGO"?4990:5010),
+    resultadoR: r,
+    resultadoEUR: eur,
+    comision: getComision(instrumento) || (instrumento === "DAX" ? 4.5 : 5),
+    setup, gestion: "Datos de prueba generados automáticamente.",
+    notas: "Operación de prueba — bórrala desde Más > Datos de prueba cuando termines.",
+    puntuacion: punt,
+  }));
+  Promise.all(ops.map((op) => saveOp(op, null))).then(() => {
+    toast(ops.length + " operaciones de prueba insertadas");
+  }).catch((e) => toast("Error al insertar: " + e.message));
 }
 
 function clearTestData() {
-  const count = state.ops.filter(o => o._test).length;
-  if (!count) { toast("No hay datos de prueba para borrar"); return; }
-  if (!confirm("¿Borrar las " + count + " operaciones de prueba?")) return;
-  state.ops = state.ops.filter(o => !o._test);
-  refreshOpsView();
-  toast("Datos de prueba borrados");
+  const testOps = state.ops.filter(o => o._test);
+  if (!testOps.length) { toast("No hay datos de prueba para borrar"); return; }
+  if (!confirm("¿Borrar las " + testOps.length + " operaciones de prueba?")) return;
+  Promise.all(testOps.map((o) => deleteOp(o.id))).then(() => {
+    toast("Datos de prueba borrados");
+  }).catch((e) => toast("Error al borrar: " + e.message));
 }
 
 function saveCapitalInicial() {
@@ -1496,11 +1639,19 @@ function saveCapitalInicial() {
 }
 
 function saveComisiones() {
-  const dax = parseFloat(document.getElementById("com_dax").value) || 0;
-  const sp500 = parseFloat(document.getElementById("com_sp500").value) || 0;
-  setComision("DAX", dax);
-  setComision("SP500", sp500);
+  Object.keys(INSTRUMENTOS).forEach(k => {
+    const el = document.getElementById("com_" + k);
+    if (el) setComision(k, parseFloat(el.value) || 0);
+  });
   toast("Comisiones guardadas");
+}
+
+function saveValorPunto() {
+  Object.keys(INSTRUMENTOS).forEach(k => {
+    const el = document.getElementById("vp_" + k);
+    if (el) setValorPunto(k, parseFloat(el.value) || 1);
+  });
+  toast("Valor por punto guardado");
 }
 
 function calcPosicion() {
@@ -1537,8 +1688,8 @@ function calcRB() {
 }
 
 function exportCSV() {
-  const rows = [["fecha","hora","modo","tipo","instrumento","direccion","entrada","stop","tp1","resultadoR","resultadoEUR","comision","resultadoNetoEUR","puntuacion","setup","gestion","notas","motivoDescartada"]];
-  state.ops.forEach(o => rows.push([o.fecha,o.hora,o.modo||"demo",o.tipo,o.instrumento,o.direccion,o.entrada,o.stop,o.tp1,o.resultadoR,o.resultadoEUR,o.comision,netEUR(o),o.puntuacion,o.setup,o.gestion,o.notas,o.motivoDescartada].map(v=>v===undefined||v===null?"":(""+v).replace(/"/g,'""'))));
+  const rows = [["fecha","hora","modo","tipo","instrumento","direccion","entrada","stop","salida","contratos","puntos","resultadoR","resultadoEUR","comision","resultadoNetoEUR","puntuacion","setup","gestion","notas","motivoDescartada"]];
+  state.ops.forEach(o => rows.push([o.fecha,o.hora,o.modo||"demo",o.tipo,o.instrumento,o.direccion,o.entrada,o.stop,o.salida,o.contratos,o.puntos,o.resultadoR,o.resultadoEUR,o.comision,netEUR(o),o.puntuacion,o.setup,o.gestion,o.notas,o.motivoDescartada].map(v=>v===undefined||v===null?"":(""+v).replace(/"/g,'""'))));
   const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -1563,104 +1714,6 @@ function openModal(innerHtml) {
 function closeModal() { closeAnyModal(); }
 function closeAnyModal() { const bg = document.getElementById("activeModalBg"); if (bg) bg.remove(); }
 
-</script>
-<!-- ============================================================
-     MODO FIREBASE (desactivado temporalmente, ver nota en el JS principal)
-     -----------------------------------------------------------------------
-     Código de login por email/contraseña + Firestore por usuario, guardado
-     tal cual para restaurarlo cuando la app esté lista para producción.
-     type="text/plain" hace que el navegador NO lo ejecute como JS.
-     Para reactivarlo: cambia el type a "text/javascript" (o quita el
-     atributo), pégalo de vuelta en el <script> principal (sustituyendo el
-     modo local) y vuelve a añadir las 3 etiquetas <script src="...gstatic...">
-     de Firebase que están comentadas en el <head>/antes del script principal.
-============================================================ -->
-<script type="text/plain" id="firebase-legacy-code">
-function parseFirebaseConfigInput(raw) {
-  // Acepta tanto JSON puro como el snippet tal cual lo copia Firebase desde la consola,
-  // p.ej.: const firebaseConfig = { apiKey: "...", projectId: "...", ... };
-  let cleaned = raw.trim();
-  cleaned = cleaned.replace(/^\s*(const|var|let)\s+\w+\s*=\s*/, "").replace(/;\s*$/, "");
-  const m = cleaned.match(/\{[\s\S]*\}/);
-  if (m) cleaned = m[0];
-  try {
-    return JSON.parse(cleaned);
-  } catch (e) {
-    return new Function("return (" + cleaned + ")")();
-  }
-}
-
-function saveSetup() {
-  const raw = document.getElementById("fbConfigInput").value.trim();
-  const errEl = document.getElementById("setupErr");
-  try {
-    const cfg = parseFirebaseConfigInput(raw);
-    if (!cfg.apiKey || !cfg.projectId) throw new Error("faltan campos");
-    localStorage.setItem(LS_FB_CONFIG, JSON.stringify(cfg));
-    errEl.textContent = "";
-    initFirebase(cfg);
-  } catch (e) {
-    errEl.textContent = "No se ha podido leer la configuración. Copia el bloque completo tal cual lo da Firebase (incluye las llaves { }).";
-  }
-}
-
-function initFirebase(cfg) {
-  if (!firebase.apps.length) firebase.initializeApp(cfg);
-  auth = firebase.auth();
-  db = firebase.firestore();
-  try { db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch (e) {}
-  auth.onAuthStateChanged((user) => {
-    if (user) {
-      currentUser = user;
-      show("app");
-      attachOpsListener();
-      startClock();
-      goTab(localStorage.getItem(LS_LAST_TAB) || "dashboard");
-    } else {
-      currentUser = null;
-      if (unsubscribeOps) unsubscribeOps();
-      show("loginScreen");
-    }
-  });
-}
-
-function doLogin() {
-  const email = document.getElementById("loginEmail").value.trim();
-  const pass = document.getElementById("loginPass").value;
-  const errEl = document.getElementById("loginErr");
-  errEl.textContent = "";
-  if (!email || !pass) { errEl.textContent = "Introduce email y contraseña."; return; }
-  auth.signInWithEmailAndPassword(email, pass).catch((e) => {
-    errEl.textContent = "Credenciales incorrectas o usuario no existe.";
-  });
-}
-
-function doLogout() {
-  auth.signOut();
-}
-
-function opsCol() {
-  return db.collection("users").doc(currentUser.uid).collection("operaciones");
-}
-
-function attachOpsListener() {
-  if (unsubscribeOps) unsubscribeOps();
-  unsubscribeOps = opsCol().orderBy("fecha", "desc").orderBy("hora", "desc")
-    .onSnapshot((snap) => {
-      state.ops = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      render();
-    }, (err) => {
-      toast("Error al leer datos: " + err.message);
-    });
-}
-
-function saveOpFirestore(op, id) {
-  const payload = { ...op, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-  if (id) return opsCol().doc(id).update(payload);
-  payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-  return opsCol().add(payload);
-}
-function deleteOpFirestore(id) { return opsCol().doc(id).delete(); }
 </script>
 </body>
 </html>
