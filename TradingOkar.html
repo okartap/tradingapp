@@ -542,19 +542,31 @@ const LS_OPS_LEGACY = "ts_operaciones";
 // cualquier dispositivo sin pantalla de configuración. No es un dato secreto:
 // la seguridad la dan las reglas de Firestore, no ocultar esto.
 //
-// PENDIENTE: esto sigue apuntando al proyecto propio "tradingokar". Según lo
-// acordado, TradingOkar pasará a compartir la base de datos de GestInmo
-// (proyecto "gestinmo-13c65") — en cuanto se reciba esa config, sustituir
-// estos 6 valores por los del proyecto de GestInmo (nada más en el código
-// necesita cambiar: la colección "trading_operaciones" ya está preparada
-// para convivir con las colecciones de GestInmo en la misma base de datos).
+// Cambiado (03/09/2026): ahora apunta al proyecto compartido con GestInmo
+// ("gestinmo-13c65") en vez del proyecto propio "tradingokar". La colección
+// "trading_operaciones" convive con las de GestInmo en la misma base de
+// datos, sin tocar nada más de ese lado. IMPORTANTE — antes de que esto
+// funcione en el móvil hacen falta, en la consola de Firebase del proyecto
+// "gestinmo-13c65" (no en "tradingokar", que ya no se usa):
+//   1. Authentication → Sign-in method → activar Email/contraseña (si no lo
+//      estaba) → Users → Add user → el mismo email+contraseña de antes
+//      (okartap@gmail.com / trading0403) u otro que se decida.
+//   2. Firestore → Rules → AÑADIR (no sustituir) el bloque de
+//      trading_operaciones que ya se pasó a GestInmo.
+//   3. Firestore → Indexes → crear el mismo índice compuesto que en
+//      "tradingokar" (trading_operaciones: uid Asc, fecha Desc, hora Desc) —
+//      los índices no se copian de un proyecto a otro.
+// Los datos que ya había en el proyecto "tradingokar" (las operaciones reales
+// recuperadas) NO pasan solas a este proyecto nuevo — son bases de datos
+// distintas. Conviene exportarlas a CSV (Más → Exportar diario a CSV) antes
+// de este cambio, por si hay que volver a meterlas a mano.
 const DEFAULT_FB_CONFIG = {
-  apiKey: "AIzaSyB4X-xA94zts2nUiVYaSeX9MnisdSlhWTw",
-  authDomain: "tradingokar.firebaseapp.com",
-  projectId: "tradingokar",
-  storageBucket: "tradingokar.firebasestorage.app",
-  messagingSenderId: "692304032118",
-  appId: "1:692304032118:web:81cae2d45d77ff01478a57"
+  apiKey: "AIzaSyDxtqNsvRhVl4yL9-FdPwQeIokQGhXdR0U",
+  authDomain: "gestinmo-13c65.firebaseapp.com",
+  projectId: "gestinmo-13c65",
+  storageBucket: "gestinmo-13c65.firebasestorage.app",
+  messagingSenderId: "463008463367",
+  appId: "1:463008463367:web:fa17c5e74a1080280ac8a2"
 };
 
 function getCapitalInicial(modo) {
