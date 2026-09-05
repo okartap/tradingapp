@@ -533,6 +533,10 @@ const LS_LAST_TAB = "ts_lastTab";
 const LS_CAPITAL = "ts_capitalInicial";
 const LS_COMISIONES = "ts_comisiones";
 const LS_VALORPUNTO = "ts_valorPunto";
+// Clave que usaba el "modo local" (antes de reactivar el login). Ya no se
+// escribe aquí, pero si un dispositivo la tiene de antes, se ofrece
+// importarla a la nube — ver getLocalOpsBackup()/importLocalOps() en Más.
+const LS_OPS_LEGACY = "ts_operaciones";
 
 // Config de Firebase — incrustada para que la app funcione directamente en
 // cualquier dispositivo sin pantalla de configuración. No es un dato secreto:
@@ -625,6 +629,32 @@ function calcResultado({ instrumento, direccion, entrada, stop, salida, contrato
 
 let db, auth, currentUser = null, unsubscribeOps = null;
 let state = { ops: [], tab: "dashboard", diarioFilter: "todas", diarioModo: "todas", diarioSearch: "", checklist: {}, modo: "demo" };
+
+// Recuperación de operaciones guardadas en este dispositivo durante el
+// "modo local" (antes de reactivar el login), que nunca llegaron a la nube.
+// Se muestran en Más para poder importarlas a Firestore con un botón.
+function getLocalOpsBackup() {
+  try {
+    const raw = localStorage.getItem(LS_OPS_LEGACY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
+}
+function importLocalOps() {
+  const local = getLocalOpsBackup();
+  if (!local.length) { toast("No hay datos locales que importar"); return; }
+  if (!confirm("¿Importar " + local.length + " operaciones guardadas en este dispositivo a tu cuenta en la nube? No se borrarán del dispositivo hasta confirmar que la importación ha ido bien.")) return;
+  const toImport = local.map((o) => { const { id, ...rest } = o; return rest; });
+  Promise.all(toImport.map((op) => saveOp(op, null))).then(() => {
+    try {
+      localStorage.setItem(LS_OPS_LEGACY + "_importado", localStorage.getItem(LS_OPS_LEGACY));
+      localStorage.removeItem(LS_OPS_LEGACY);
+    } catch (e) {}
+    toast(toImport.length + " operaciones importadas a la nube");
+    render();
+  }).catch((e) => toast("Error al importar: " + e.message));
+}
 
 // =======================================================================
 // MODO NUBE: login + Firestore, colección compartida con GestInmo
@@ -1502,7 +1532,15 @@ function renderReferencia() {
 // MÁS: calculadora + ajustes
 // ---------------------------------------------------------------------
 function renderMas() {
+  const localBackup = getLocalOpsBackup();
   return `
+  ${localBackup.length ? `
+  <div class="card" style="border-color:rgba(224,156,58,.5)">
+    <h3>Recuperar operaciones de este dispositivo</h3>
+    <p class="small">Se han encontrado ${localBackup.length} operaciones guardadas en este teléfono de cuando la app aún no estaba conectada a la nube. No están en tu cuenta todavía — impórtalas para no perderlas.</p>
+    <button class="btn btn-primary" style="margin-top:6px" onclick="importLocalOps()">Importar ${localBackup.length} operaciones a la nube</button>
+  </div>
+  ` : ""}
   <div class="card">
     <h3>Capital inicial (para la evolución de la cuenta)</h3>
     <div class="grid2">
