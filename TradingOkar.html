@@ -625,13 +625,23 @@ function netEUR(o) {
 // contratos — la app hace la resta, el usuario no tiene que calcular nada.
 // "puntos" es siempre el movimiento puro del precio (nunca se multiplica por
 // los contratos: para eso está el resultado en €, que sí los tiene en cuenta).
-function calcResultado({ instrumento, direccion, entrada, stop, salida, contratos }) {
+// `salidas` es una lista de precios de salida: uno por cada contrato que se
+// cerró a ese precio (si entras con 2 contratos y sales de cada uno en un
+// precio distinto, van 2 valores aquí). Si todos los contratos salen juntos
+// al mismo precio, sigue siendo una lista de 1 elemento, como antes.
+function calcResultado({ instrumento, direccion, entrada, stop, salidas, contratos }) {
   const out = { puntos: null, resultadoR: null, resultadoEUR: null, comision: getComision(instrumento) || 0 };
-  if (typeof entrada !== "number" || typeof salida !== "number") return out;
+  const lista = Array.isArray(salidas) ? salidas : (typeof salidas === "number" ? [salidas] : []);
+  const listaCompleta = lista.length > 0 && lista.every(s => typeof s === "number");
+  if (typeof entrada !== "number" || !listaCompleta) return out;
   const signo = direccion === "CORTO" ? -1 : 1;
-  out.puntos = signo * (salida - entrada);
   const contratosN = typeof contratos === "number" && contratos > 0 ? contratos : 1;
-  out.resultadoEUR = out.puntos * getValorPunto(instrumento) * contratosN;
+  const puntosPorSalida = lista.map(s => signo * (s - entrada));
+  // "puntos" que se muestra es la media (el movimiento típico conseguido);
+  // el € total sí reparte cada salida entre los contratos que representa.
+  out.puntos = puntosPorSalida.reduce((a, b) => a + b, 0) / puntosPorSalida.length;
+  const contratosPorSalida = lista.length > 1 ? 1 : contratosN;
+  out.resultadoEUR = puntosPorSalida.reduce((sum, p) => sum + p * getValorPunto(instrumento) * contratosPorSalida, 0);
   if (typeof stop === "number") {
     const riesgoPuntos = Math.abs(entrada - stop);
     if (riesgoPuntos > 0) out.resultadoR = out.puntos / riesgoPuntos;
@@ -1048,7 +1058,9 @@ function openOpDetail(id) {
   ` : `
     <div class="kv"><div class="k">Entrada</div><div>${o.entrada ?? '—'}</div></div>
     <div class="kv"><div class="k">Stop</div><div>${o.stop ?? '—'}</div></div>
-    <div class="kv"><div class="k">Salida</div><div>${o.salida ?? '—'}</div></div>
+    ${Array.isArray(o.salidas) && o.salidas.length > 1
+      ? `<div class="kv"><div class="k">Salidas</div><div>${o.salidas.join(' / ')} <span class="small">(media ${o.salida?.toFixed?.(2) ?? o.salida})</span></div></div>`
+      : `<div class="kv"><div class="k">Salida</div><div>${o.salida ?? '—'}</div></div>`}
     ${o.tp1!==undefined ? `<div class="kv"><div class="k">TP1</div><div>${o.tp1}</div></div>` : ""}
     <div class="kv"><div class="k">Contratos</div><div>${o.contratos ?? '—'}</div></div>
     ${typeof o.puntos==='number' ? `<div class="kv"><div class="k">Puntos</div><div class="${o.puntos>0?'pos':o.puntos<0?'neg':''}">${(o.puntos>0?'+':'')+o.puntos.toFixed(2)} pts</div></div>` : ""}
@@ -1102,10 +1114,9 @@ function openOpForm(id, prefill) {
     <div><label>Entrada</label><input type="number" step="any" inputmode="decimal" min="0" id="f_entrada" value="${o.entrada??''}" oninput="updateOpPreview()"></div>
     <div><label>Stop (opcional, para el R)</label><input type="number" step="any" inputmode="decimal" min="0" id="f_stop" value="${o.stop??''}" oninput="updateOpPreview()"></div>
   </div>
-  <div class="grid2">
-    <div><label>Salida</label><input type="number" step="any" inputmode="decimal" min="0" id="f_salida" value="${o.salida??''}" oninput="updateOpPreview()"></div>
-    <div><label>Contratos</label><input type="number" step="any" inputmode="decimal" min="0" id="f_contratos" value="${o.contratos??1}" oninput="updateOpPreview()"></div>
-  </div>
+  <label>Contratos</label>
+  <input type="number" step="1" min="1" inputmode="numeric" id="f_contratos" value="${o.contratos??1}" oninput="onContratosChange()">
+  <div id="f_salidas_container">${renderSalidaInputs(o.contratos || 1, o.salidas || (o.salida != null ? [o.salida] : []))}</div>
   <div class="card tight" id="f_preview" style="margin:2px 0 14px"></div>
   <label>Setup / bloques que confirmaron</label>
   <textarea id="f_setup" rows="2" placeholder="Ej: Spring LPS H1, OB M15 en discount, No Supply M5, sweep SSL + MSS, CRT Fase2 London KZ">${esc(o.setup||'')}</textarea>
@@ -1123,6 +1134,43 @@ function openOpForm(id, prefill) {
   updateOpPreview();
 }
 
+// Dibuja un campo "Salida" por cada contrato (si solo hay 1 contrato, se ve
+// igual que antes). `existentes` conserva los valores ya escritos al cambiar
+// el nº de contratos, para no perder lo que el usuario ya había puesto.
+function renderSalidaInputs(n, existentes) {
+  n = Math.max(1, Math.round(n) || 1);
+  if (n === 1) {
+    const v = existentes && existentes[0] != null ? existentes[0] : '';
+    return `<label>Salida</label><input type="number" step="any" inputmode="decimal" min="0" id="f_salida_0" value="${v}" oninput="updateOpPreview()">`;
+  }
+  let html = `<label>Salidas (una por contrato)</label><div class="grid2">`;
+  for (let i = 0; i < n; i++) {
+    const v = existentes && existentes[i] != null ? existentes[i] : '';
+    html += `<input type="number" step="any" inputmode="decimal" min="0" placeholder="Salida contrato ${i + 1}" id="f_salida_${i}" value="${v}" oninput="updateOpPreview()">`;
+  }
+  html += `</div>`;
+  return html;
+}
+// Al cambiar el nº de contratos, redibuja los campos de salida conservando
+// los valores que ya hubiera escritos.
+function onContratosChange() {
+  const cont = document.getElementById("f_salidas_container");
+  if (!cont) return;
+  const n = parseInt(document.getElementById("f_contratos").value, 10) || 1;
+  const existentes = readSalidasFromForm();
+  cont.innerHTML = renderSalidaInputs(n, existentes);
+  updateOpPreview();
+}
+// Recoge todos los campos f_salida_0, f_salida_1... del formulario, en orden.
+function readSalidasFromForm() {
+  const salidas = [];
+  for (let i = 0; ; i++) {
+    const el = document.getElementById("f_salida_" + i);
+    if (!el) break;
+    salidas.push(el.value === "" ? null : parseFloat(el.value));
+  }
+  return salidas;
+}
 // Lee los campos del formulario (si existen) y calcula puntos/R/€ — se usa
 // tanto para la vista previa en vivo como al guardar, así nunca se desincronizan.
 function readOpFormResultado() {
@@ -1133,7 +1181,7 @@ function readOpFormResultado() {
     direccion: val("f_direccion"),
     entrada: num("f_entrada"),
     stop: num("f_stop"),
-    salida: num("f_salida"),
+    salidas: readSalidasFromForm(),
     contratos: num("f_contratos"),
   });
 }
@@ -1159,6 +1207,10 @@ function submitOpForm(id) {
   const val = (sel) => document.getElementById(sel).value;
   const num = (sel) => { const v = val(sel); return v === "" ? null : parseFloat(v); };
   const calc = readOpFormResultado();
+  const salidas = readSalidasFromForm().filter(s => typeof s === "number");
+  // "salida" (singular) se conserva para las vistas antiguas: si hay varias,
+  // es su precio medio; "salidas" guarda el detalle completo, una por contrato.
+  const salidaMedia = salidas.length ? salidas.reduce((a, b) => a + b, 0) / salidas.length : null;
   const op = {
     tipo: "operacion",
     fecha: val("f_fecha"),
@@ -1168,7 +1220,8 @@ function submitOpForm(id) {
     direccion: val("f_direccion"),
     entrada: num("f_entrada"),
     stop: num("f_stop"),
-    salida: num("f_salida"),
+    salida: salidaMedia,
+    salidas: salidas.length > 1 ? salidas : null,
     contratos: num("f_contratos") || 1,
     puntos: calc.puntos,
     resultadoR: calc.resultadoR,
@@ -1738,8 +1791,8 @@ function calcRB() {
 }
 
 function exportCSV() {
-  const rows = [["fecha","hora","modo","tipo","instrumento","direccion","entrada","stop","salida","contratos","puntos","resultadoR","resultadoEUR","comision","resultadoNetoEUR","puntuacion","setup","gestion","notas","motivoDescartada"]];
-  state.ops.forEach(o => rows.push([o.fecha,o.hora,o.modo||"demo",o.tipo,o.instrumento,o.direccion,o.entrada,o.stop,o.salida,o.contratos,o.puntos,o.resultadoR,o.resultadoEUR,o.comision,netEUR(o),o.puntuacion,o.setup,o.gestion,o.notas,o.motivoDescartada].map(v=>v===undefined||v===null?"":(""+v).replace(/"/g,'""'))));
+  const rows = [["fecha","hora","modo","tipo","instrumento","direccion","entrada","stop","salida","salidas","contratos","puntos","resultadoR","resultadoEUR","comision","resultadoNetoEUR","puntuacion","setup","gestion","notas","motivoDescartada"]];
+  state.ops.forEach(o => rows.push([o.fecha,o.hora,o.modo||"demo",o.tipo,o.instrumento,o.direccion,o.entrada,o.stop,o.salida,(o.salidas||[]).join(";"),o.contratos,o.puntos,o.resultadoR,o.resultadoEUR,o.comision,netEUR(o),o.puntuacion,o.setup,o.gestion,o.notas,o.motivoDescartada].map(v=>v===undefined||v===null?"":(""+v).replace(/"/g,'""'))));
   const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
