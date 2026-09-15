@@ -163,7 +163,10 @@ tr:last-child td{border-bottom:none;}
 .op-item:active{background:var(--navy-hover, rgba(255,255,255,.03));}
 .op-item .chev{flex:none;color:var(--muted2);font-size:16px;margin-left:2px;}
 .op-item .dot{width:8px;height:8px;border-radius:50%;flex:none;}
-.op-item .dot.pos{background:var(--green);} .op-item .dot.neg{background:var(--red);} .op-item .dot.na{background:var(--muted2);}
+.op-item .dot.demo{background:var(--muted2);} .op-item .dot.real{background:var(--gold);}
+.day-head{display:flex;justify-content:space-between;align-items:baseline;padding:4px 2px 8px;font-size:11px;font-weight:700;color:var(--silver);text-transform:uppercase;letter-spacing:1px;}
+.day-head .n{color:var(--muted2);text-transform:none;font-weight:400;letter-spacing:0;font-family:'Crimson Pro',Georgia,serif;font-style:italic;}
+.day-head .t{font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:.3px;}
 .op-item .mid{flex:1;min-width:0;}
 .op-item .mid .l1{font-size:14px;font-weight:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
 .op-item .mid .l2{font-size:11.5px;color:var(--muted2);margin-top:3px;font-family:'Crimson Pro',Georgia,serif;font-style:italic;}
@@ -631,7 +634,7 @@ function netEUR(o) {
 // precio distinto, van 2 valores aquí). Si todos los contratos salen juntos
 // al mismo precio, sigue siendo una lista de 1 elemento, como antes.
 function calcResultado({ instrumento, direccion, entrada, stop, salidas, contratos }) {
-  const out = { puntos: null, resultadoR: null, resultadoEUR: null, comision: getComision(instrumento) || 0 };
+  const out = { puntos: null, puntosPorSalida: null, resultadoR: null, resultadoEUR: null, comision: getComision(instrumento) || 0 };
   const lista = Array.isArray(salidas) ? salidas : (typeof salidas === "number" ? [salidas] : []);
   const listaCompleta = lista.length > 0 && lista.every(s => typeof s === "number");
   if (typeof entrada !== "number" || !listaCompleta) return out;
@@ -641,6 +644,9 @@ function calcResultado({ instrumento, direccion, entrada, stop, salidas, contrat
   // "puntos" que se muestra es la media (el movimiento típico conseguido);
   // el € total sí reparte cada salida entre los contratos que representa.
   out.puntos = puntosPorSalida.reduce((a, b) => a + b, 0) / puntosPorSalida.length;
+  // Solo se guarda el detalle por salida cuando hay más de una (varios contratos
+  // cerrados en precios distintos) — es lo que permite ver "50 / 65 pts" en el Diario.
+  if (puntosPorSalida.length > 1) out.puntosPorSalida = puntosPorSalida;
   const contratosPorSalida = lista.length > 1 ? 1 : contratosN;
   out.resultadoEUR = puntosPorSalida.reduce((sum, p) => sum + p * getValorPunto(instrumento) * contratosPorSalida, 0);
   if (typeof stop === "number") {
@@ -978,21 +984,34 @@ function nextKillZone() {
   return upcoming[0] || null;
 }
 
+// Detalle "2 contratos · +50/+65 pts" que va bajo la fecha en cada tarjeta:
+// si la operación tuvo varias salidas (una por contrato) se listan los puntos
+// de cada una; si no, solo los puntos de la operación entera.
+function opContratosDetalle(o) {
+  const contratos = o.contratos || 1;
+  const etiqueta = `${contratos} contrato${contratos === 1 ? '' : 's'}`;
+  if (typeof o.puntos !== "number") return etiqueta;
+  const fmtPts = (p) => (p > 0 ? '+' : '') + p.toFixed(1);
+  const puntosTxt = Array.isArray(o.puntosPorSalida) && o.puntosPorSalida.length > 1
+    ? o.puntosPorSalida.map(fmtPts).join(' / ') + ' pts'
+    : fmtPts(o.puntos) + ' pts';
+  return `${etiqueta} · ${puntosTxt}`;
+}
 function opItemHtml(o) {
   const isSkip = o.tipo === "no-operacion";
-  const r = o.resultadoR;
-  const dot = isSkip ? "na" : (r > 0 ? "pos" : r < 0 ? "neg" : "na");
-  const dirBadge = isSkip ? `<span class="badge skip">Descartada</span>` : `<span class="badge ${o.direccion==='LARGO'?'long':'short'}">${o.direccion==='LARGO'?'LARGO':'CORTO'}</span>`;
+  const eur = o.resultadoEUR;
+  const tono = isSkip ? "" : (eur > 0 ? "pos" : eur < 0 ? "neg" : "");
   const modo = o.modo || "demo";
-  const modoBadge = `<span class="badge modo-${modo}">${modo==='real'?'Real':'Demo'}</span>`;
+  const dirBadge = isSkip ? `<span class="badge skip">Descartada</span>` : `<span class="badge ${o.direccion==='LARGO'?'long':'short'}">${o.direccion==='LARGO'?'LARGO':'CORTO'}</span>`;
+  const detalle = isSkip ? '' : ` · ${opContratosDetalle(o)}`;
   return `
   <div class="op-item" onclick="openOpDetail('${o.id}')">
-    <div class="dot ${dot}"></div>
+    <div class="dot ${modo}" title="${modo==='real'?'Cuenta real':'Cuenta demo'}"></div>
     <div class="mid">
-      <div class="l1">${dirBadge}<span class="badge instr">${esc(o.instrumento||'')}</span>${modoBadge}</div>
-      <div class="l2">${fmtDate(o.fecha)} ${o.hora||''} ${o.puntuacion!==undefined?'· '+o.puntuacion+'/5 bloques':''}</div>
+      <div class="l1">${dirBadge}<span class="badge instr">${esc(o.instrumento||'')}</span></div>
+      <div class="l2">${fmtDate(o.fecha)} ${o.hora||''}${detalle}</div>
     </div>
-    <div class="r ${isSkip?'':(r>0?'pos':r<0?'neg':'')}">${isSkip?'—':fmtR(r)}</div>
+    <div class="r ${tono}">${isSkip?'—':fmtEUR(eur, true)}</div>
     <div class="chev">›</div>
   </div>`;
 }
@@ -1007,8 +1026,8 @@ function emptyState(title, sub) {
 function renderDiario() {
   let ops = state.ops;
   const f = state.diarioFilter;
-  if (f === "ganadas") ops = ops.filter(o => o.tipo !== "no-operacion" && (o.resultadoR||0) > 0);
-  else if (f === "perdidas") ops = ops.filter(o => o.tipo !== "no-operacion" && (o.resultadoR||0) < 0);
+  if (f === "ganadas") ops = ops.filter(o => o.tipo !== "no-operacion" && (o.resultadoEUR||0) > 0);
+  else if (f === "perdidas") ops = ops.filter(o => o.tipo !== "no-operacion" && (o.resultadoEUR||0) < 0);
   else if (f === "descartadas") ops = ops.filter(o => o.tipo === "no-operacion");
   else if (Object.keys(INSTRUMENTOS).includes(f)) ops = ops.filter(o => o.instrumento === f);
   const dm = state.diarioModo;
@@ -1035,10 +1054,34 @@ function renderDiario() {
   <div class="chip-row">
     ${chips.map(([k,l]) => `<button class="chip ${f===k?'active':''}" onclick="state.diarioFilter='${k}';render()">${l}</button>`).join("")}
   </div>
-  <div class="card">
-    ${ops.length ? ops.map(opItemHtml).join("") : emptyState("Sin resultados", "Prueba a cambiar el filtro o añade una operación con el botón +.")}
-  </div>
+  ${ops.length ? diarioAgrupadoPorDiaHtml(ops) : `<div class="card">${emptyState("Sin resultados", "Prueba a cambiar el filtro o añade una operación con el botón +.")}</div>`}
   `;
+}
+
+// Agrupa las operaciones (ya filtradas) por fecha y muestra, encima de cada
+// grupo, el resultado total de ese día — así se ve de un vistazo cómo fue
+// cada jornada sin tener que sumarlo a mano ni entrar en cada operación.
+function diarioAgrupadoPorDiaHtml(ops) {
+  const dias = [];
+  const porFecha = new Map();
+  ops.forEach(o => {
+    if (!porFecha.has(o.fecha)) { porFecha.set(o.fecha, []); dias.push(o.fecha); }
+    porFecha.get(o.fecha).push(o);
+  });
+  return dias.map(fecha => {
+    const opsDelDia = porFecha.get(fecha);
+    const reales = opsDelDia.filter(o => o.tipo !== "no-operacion");
+    const totalEUR = reales.reduce((sum, o) => sum + (typeof o.resultadoEUR === "number" ? o.resultadoEUR : 0), 0);
+    const tono = totalEUR > 0 ? "pos" : totalEUR < 0 ? "neg" : "";
+    return `
+    <div class="day-head">
+      <div>${fmtDate(fecha)} <span class="n">· ${opsDelDia.length} operaci${opsDelDia.length===1?'ón':'ones'}</span></div>
+      <div class="t ${tono}">${reales.length ? fmtEUR(totalEUR, true) : '—'}</div>
+    </div>
+    <div class="card tight" style="margin-bottom:16px">
+      ${opsDelDia.map(opItemHtml).join("")}
+    </div>`;
+  }).join("");
 }
 
 function openOpDetail(id) {
@@ -1227,6 +1270,7 @@ function submitOpForm(id) {
     salidas: salidas.length > 1 ? salidas : null,
     contratos: num("f_contratos") || 1,
     puntos: calc.puntos,
+    puntosPorSalida: calc.puntosPorSalida,
     resultadoR: calc.resultadoR,
     resultadoEUR: calc.resultadoEUR,
     comision: calc.comision,
