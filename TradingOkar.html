@@ -753,7 +753,19 @@ function doLogin() {
   errEl.textContent = "";
   if (!email || !pass) { errEl.textContent = "Introduce email y contraseña."; return; }
   auth.signInWithEmailAndPassword(email, pass).catch((e) => {
-    errEl.textContent = "Credenciales incorrectas o usuario no existe.";
+    // Se muestra el motivo real que da Firebase (antes se ocultaba con un
+    // mensaje genérico) — así se distingue "contraseña incorrecta" de
+    // "demasiados intentos", "sin conexión", "proyecto/config equivocada", etc.
+    const motivos = {
+      "auth/wrong-password": "Contraseña incorrecta.",
+      "auth/user-not-found": "No existe ningún usuario con ese email en este proyecto de Firebase.",
+      "auth/invalid-email": "El email no tiene un formato válido.",
+      "auth/too-many-requests": "Demasiados intentos fallidos — Firebase ha bloqueado el acceso temporalmente. Espera unos minutos o restablece la contraseña desde la Consola de Firebase.",
+      "auth/network-request-failed": "Sin conexión a internet (o Firebase bloqueado en esta red).",
+      "auth/invalid-api-key": "La configuración de Firebase de esta app (apiKey) no es válida.",
+      "auth/user-disabled": "Este usuario está deshabilitado en Firebase.",
+    };
+    errEl.textContent = (motivos[e.code] || (e.message || "Credenciales incorrectas o usuario no existe.")) + ` (${e.code||"sin código"})`;
   });
 }
 
