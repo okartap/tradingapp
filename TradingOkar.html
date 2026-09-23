@@ -215,6 +215,8 @@ canvas{width:100%;display:block;}
   <div class="errtxt" id="loginErr"></div>
   <button class="btn btn-primary" style="margin-top:14px" onclick="doLogin()">Entrar</button>
   <p class="center small" style="margin-top:14px">El usuario se crea desde la Consola de Firebase (Authentication → Users → Add user). Esta app no permite registro abierto.</p>
+  <p class="center small" id="fbProjectInfo" style="margin-top:10px;opacity:.7"></p>
+  <p class="center small" style="margin-top:4px"><a href="#" onclick="resetFbConfigDevice();return false;">¿No entra con ninguna contraseña? Restablecer configuración de este dispositivo</a></p>
 </div>
 
 <!-- ============ APP ============ -->
@@ -748,7 +750,7 @@ function initFirebase(cfg) {
 
 function doLogin() {
   const email = document.getElementById("loginEmail").value.trim();
-  const pass = document.getElementById("loginPass").value;
+  const pass = document.getElementById("loginPass").value.trim();
   const errEl = document.getElementById("loginErr");
   errEl.textContent = "";
   if (!email || !pass) { errEl.textContent = "Introduce email y contraseña."; return; }
@@ -802,15 +804,28 @@ function deleteOp(id) { return opsCol().doc(id).delete(); }
 // ---------------------------------------------------------------------
 window.addEventListener("DOMContentLoaded", boot);
 
+// Restablece la configuración de Firebase GUARDADA EN ESTE DISPOSITIVO (pantalla
+// de "Configurar Okartap", solo hace falta si alguna vez se pegó ahí una config
+// distinta a la de siempre) y recarga la app para que vuelva a usar la de fábrica.
+// No toca ni borra ninguna operación guardada en la nube — solo un ajuste local.
+function resetFbConfigDevice() {
+  if (!confirm("Esto borra la configuración de Firebase guardada en este dispositivo y recarga la app con la configuración de fábrica. Tus operaciones NO se borran (están en la nube). ¿Continuar?")) return;
+  localStorage.removeItem(LS_FB_CONFIG);
+  location.reload();
+}
+
 function boot() {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
   let cfg = DEFAULT_FB_CONFIG;
+  let cfgOrigen = "de fábrica";
   try {
     const saved = JSON.parse(localStorage.getItem(LS_FB_CONFIG) || "null");
-    if (saved && saved.apiKey) cfg = saved;
+    if (saved && saved.apiKey) { cfg = saved; cfgOrigen = "guardada en este dispositivo"; }
   } catch (e) {}
+  const info = document.getElementById("fbProjectInfo");
+  if (info && cfg) info.textContent = `Proyecto Firebase: ${cfg.projectId || "?"} (config ${cfgOrigen})`;
   if (cfg && cfg.apiKey) {
     try {
       initFirebase(cfg);
