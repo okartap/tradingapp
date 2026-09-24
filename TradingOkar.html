@@ -1212,6 +1212,11 @@ const AJUSTES_DEFAULT = {
   beMargen: 1,           // ± € de resultado neto que se considera Break Even
   perdidaMaxDiariaPct: 2,
   maxOpsDia: 3,
+  riesgoObjetivoPct: 0.5, // % del saldo que se quiere arriesgar por operación
+  riesgoMaxPct: 1,        // % máximo por operación (aviso si se supera)
+  // Contratos con los que se abre el formulario en cada mercado (24/09/2026):
+  // equivalentes aproximados a 2 contratos de Nasdaq, todos a 1 €/punto.
+  contratosDefecto: { NASDAQ: 2, ORO: 14, SP500: 9, DOWJONES: 1, DAX: 1 },
   etiquetas: DEFAULT_ETIQUETAS.slice(),
   revisiones: {},        // { "AAAA-MM-DD" (lunes): { error, regla, guardada } }
 };
@@ -1225,6 +1230,9 @@ function mergeAjustes(a) {
     beMargen: num(a.beMargen, AJUSTES_DEFAULT.beMargen),
     perdidaMaxDiariaPct: num(a.perdidaMaxDiariaPct, AJUSTES_DEFAULT.perdidaMaxDiariaPct),
     maxOpsDia: num(a.maxOpsDia, AJUSTES_DEFAULT.maxOpsDia),
+    riesgoObjetivoPct: num(a.riesgoObjetivoPct, AJUSTES_DEFAULT.riesgoObjetivoPct),
+    riesgoMaxPct: num(a.riesgoMaxPct, AJUSTES_DEFAULT.riesgoMaxPct),
+    contratosDefecto: { ...AJUSTES_DEFAULT.contratosDefecto, ...(a.contratosDefecto || {}) },
     etiquetas: Array.isArray(a.etiquetas) && a.etiquetas.length ? a.etiquetas.slice() : DEFAULT_ETIQUETAS.slice(),
     revisiones: { ...(a.revisiones || {}) },
   };
@@ -1270,6 +1278,7 @@ function guardarAjustes(cambios, msg) {
 
 function getCapitalInicial(modo) { const v = ajustes.capital[modo]; return typeof v === "number" ? v : 10000; }
 function getComision(instrumento) { const v = ajustes.comisiones[instrumento]; return typeof v === "number" ? v : 0; }
+function getContratosDefecto(instrumento) { const v = ajustes.contratosDefecto[instrumento]; return typeof v === "number" && v >= 1 ? Math.round(v) : 1; }
 function getValorPunto(instrumento) { const v = ajustes.valorPunto[instrumento]; return typeof v === "number" && v > 0 ? v : 1; }
 
 // =====================================================================
@@ -1296,18 +1305,27 @@ function resultadoTipo(o) {
 // Calcula puntos / R / € a partir de entrada, stop (opcional), salidas y
 // contratos. "puntos" es el movimiento puro del precio (media si hay varias
 // salidas); el € sí tiene en cuenta los contratos.
-function calcResultado({ instrumento, direccion, entrada, stop, salidas, contratos }) {
+// Calcula puntos / R / € de una operación a partir de la entrada, el stop
+// inicial (opcional, para el R) y sus salidas. Cada salida lleva los
+// contratos que se cerraron a ese precio: [{ salida, contratos }].
+// Gestión de Patry: dos salidas — mitad en 1:1 y mitad en zona de confluencia.
+//  · puntos = media ponderada por contratos (el movimiento "típico" conseguido)
+//  · € = Σ puntos de cada salida × €/punto × sus contratos
+//  · R = puntos medios ÷ distancia entrada-stop inicial
+function calcResultado({ instrumento, direccion, entrada, stop, ordenes }) {
   const out = { puntos: null, puntosPorSalida: null, resultadoR: null, resultadoEUR: null, comision: getComision(instrumento) };
-  const lista = Array.isArray(salidas) ? salidas : (typeof salidas === "number" ? [salidas] : []);
-  const listaCompleta = lista.length > 0 && lista.every(s => typeof s === "number" && !isNaN(s));
-  if (typeof entrada !== "number" || isNaN(entrada) || !listaCompleta) return out;
+  const lista = (ordenes || []).filter(x => x && x.contratos > 0);
+  const completa = lista.length > 0 && lista.every(x => typeof x.salida === "number" && !isNaN(x.salida));
+  if (typeof entrada !== "number" || isNaN(entrada) || !completa) return out;
   const signo = direccion === "CORTO" ? -1 : 1;
-  const contratosN = typeof contratos === "number" && contratos > 0 ? contratos : 1;
-  const puntosPorSalida = lista.map(s => signo * (s - entrada));
-  out.puntos = puntosPorSalida.reduce((a, b) => a + b, 0) / puntosPorSalida.length;
-  if (puntosPorSalida.length > 1) out.puntosPorSalida = puntosPorSalida;
-  const contratosPorSalida = lista.length > 1 ? 1 : contratosN;
-  out.resultadoEUR = puntosPorSalida.reduce((sum, p) => sum + p * getValorPunto(instrumento) * contratosPorSalida, 0);
+  const vp = getValorPunto(instrumento);
+  const r2 = (x, d) => Math.round(x * Math.pow(10, d)) / Math.pow(10, d); // evita decimales basura (26.0600000004)
+  const puntosPorSalida = lista.map(x => r2(signo * (x.salida - entrada), 4));
+  const totalContr = lista.reduce((a, x) => a + x.contratos, 0);
+  out.puntos = lista.reduce((a, x, i) => a + puntosPorSalida[i] * x.contratos, 0) / totalContr;
+  if (lista.length > 1) out.puntosPorSalida = puntosPorSalida;
+  out.puntos = r2(out.puntos, 4);
+  out.resultadoEUR = r2(lista.reduce((a, x, i) => a + puntosPorSalida[i] * vp * x.contratos, 0), 2);
   if (typeof stop === "number" && !isNaN(stop)) {
     const riesgoPuntos = Math.abs(entrada - stop);
     if (riesgoPuntos > 0) out.resultadoR = out.puntos / riesgoPuntos;
@@ -1773,10 +1791,8 @@ function openOpDetail(id) {
     <div class="kv"><div class="k">Motivo</div><div style="text-align:right;max-width:70%">${esc(o.motivoDescartada || '—')}</div></div>
   ` : `
     <div class="kv"><div class="k">Entrada</div><div>${o.entrada ?? '—'}</div></div>
-    <div class="kv"><div class="k">Stop</div><div>${o.stop ?? '—'}</div></div>
-    ${Array.isArray(o.salidas) && o.salidas.length > 1
-      ? `<div class="kv"><div class="k">Salidas</div><div>${o.salidas.join(' / ')} <span class="small">(media ${typeof o.salida === 'number' ? o.salida.toFixed(2) : '—'})</span></div></div>`
-      : `<div class="kv"><div class="k">Salida</div><div>${o.salida ?? '—'}</div></div>`}
+    <div class="kv"><div class="k">Stop inicial</div><div>${o.stop ?? '—'}</div></div>
+    ${detalleSalidasHtml(o)}
     ${o.tp1 !== undefined ? `<div class="kv"><div class="k">TP1</div><div>${o.tp1}</div></div>` : ""}
     <div class="kv"><div class="k">Contratos</div><div>${o.contratos ?? '—'}</div></div>
     ${typeof o.puntos === 'number' ? `<div class="kv"><div class="k">Puntos</div><div class="${o.puntos > 0 ? 'pos' : o.puntos < 0 ? 'neg' : ''}">${(o.puntos > 0 ? '+' : '') + o.puntos.toFixed(2)} pts</div></div>` : ""}
@@ -1796,6 +1812,18 @@ function openOpDetail(id) {
   </div>`;
   openModal(html);
 }
+function detalleSalidasHtml(o) {
+  if (o.salioEnStop) return `<div class="kv"><div class="k">Salida</div><div>Entera en el stop · ${o.salida ?? '—'}</div></div>`;
+  if (Array.isArray(o.salidas) && o.salidas.length === 2 && Array.isArray(o.contratosPorSalida)) {
+    const pp = Array.isArray(o.puntosPorSalida) ? o.puntosPorSalida : [];
+    const pts = (i) => typeof pp[i] === "number" ? ` · ${(pp[i] > 0 ? "+" : "") + pp[i].toFixed(2)} pts` : "";
+    return `<div class="kv"><div class="k">Salida 1 · 1:1</div><div>${o.salidas[0]} · ${o.contratosPorSalida[0]} contr.${pts(0)}</div></div>
+            <div class="kv"><div class="k">Salida 2 · confluencia</div><div>${o.salidas[1]} · ${o.contratosPorSalida[1]} contr.${pts(1)}</div></div>`;
+  }
+  if (Array.isArray(o.salidas) && o.salidas.length > 1)
+    return `<div class="kv"><div class="k">Salidas</div><div>${o.salidas.join(' / ')} <span class="small">(media ${typeof o.salida === 'number' ? o.salida.toFixed(2) : '—'})</span></div></div>`;
+  return `<div class="kv"><div class="k">Salida</div><div>${o.salida ?? '—'}</div></div>`;
+}
 function confirmDeleteOp(id) {
   if (!confirm("¿Eliminar este registro? No se puede deshacer.")) return;
   deleteOp(id).catch((e) => toast("⚠️ No se ha podido eliminar: " + e.message));
@@ -1811,7 +1839,6 @@ function openOpForm(id) {
   const aviso = isEdit ? "" : avisoRiesgoHtml(estadoRiesgoHoy(modoIni));
   const etiquetasOp = Array.isArray(o.errores) ? o.errores : [];
   const etiquetasLista = [...ajustes.etiquetas, ...etiquetasOp.filter(e => !ajustes.etiquetas.includes(e))];
-  const nContr = Math.max(10, o.contratos || 1);
   const html = `
   <div class="modal-handle"></div>
   <div class="modal-title"><h2>${isEdit ? "Editar operación" : "Nueva operación"}</h2><button class="close" onclick="closeModal()">✕</button></div>
@@ -1822,23 +1849,24 @@ function openOpForm(id) {
   </div>
   <div class="grid2" style="margin-bottom:0">
     <div><label>Modo</label>
-      <select id="f_modo"><option value="demo" ${modoIni === 'demo' ? 'selected' : ''}>Demo</option><option value="real" ${modoIni === 'real' ? 'selected' : ''}>Real</option></select></div>
+      <select id="f_modo" onchange="updateRiesgo()"><option value="demo" ${modoIni === 'demo' ? 'selected' : ''}>Demo</option><option value="real" ${modoIni === 'real' ? 'selected' : ''}>Real</option></select></div>
     <div><label>Mercado</label>
-      <select id="f_instrumento" oninput="updateOpPreview()">${Object.keys(INSTRUMENTOS).map(k => `<option value="${k}" ${(o.instrumento || DEFAULT_INSTRUMENTO) === k ? 'selected' : ''}>${INSTRUMENTOS[k].nombre}</option>`).join("")}</select></div>
+      <select id="f_instrumento" oninput="alCambiarMercado(${isEdit ? 'false' : 'true'});updateOpPreview();updateRiesgo();actualizarSugerencia11()">${Object.keys(INSTRUMENTOS).map(k => `<option value="${k}" ${(o.instrumento || DEFAULT_INSTRUMENTO) === k ? 'selected' : ''}>${INSTRUMENTOS[k].nombre}</option>`).join("")}</select></div>
   </div>
   <div class="grid2" style="margin-bottom:0">
     <div><label>Dirección</label>
-      <select id="f_direccion" oninput="updateOpPreview()"><option value="LARGO" ${o.direccion === 'LARGO' ? 'selected' : ''}>Largo</option><option value="CORTO" ${o.direccion === 'CORTO' ? 'selected' : ''}>Corto</option></select></div>
+      <select id="f_direccion" oninput="updateOpPreview();actualizarSugerencia11()"><option value="LARGO" ${o.direccion === 'LARGO' ? 'selected' : ''}>Largo</option><option value="CORTO" ${o.direccion === 'CORTO' ? 'selected' : ''}>Corto</option></select></div>
     <div><label>Tipo de setup</label>
       <select id="f_tiposetup"><option value="">—</option>${TIPOS_SETUP.map(t => `<option ${o.tipoSetup === t ? 'selected' : ''}>${t}</option>`).join("")}</select></div>
   </div>
   <div class="grid2" style="margin-bottom:0">
-    <div><label>Entrada</label><input type="number" step="any" inputmode="decimal" min="0" id="f_entrada" value="${o.entrada ?? ''}" oninput="updateOpPreview()"></div>
-    <div><label>Stop (opcional, para el R)</label><input type="number" step="any" inputmode="decimal" min="0" id="f_stop" value="${o.stop ?? ''}" oninput="updateOpPreview()"></div>
+    <div><label>Entrada</label><input type="number" step="any" inputmode="decimal" min="0" id="f_entrada" value="${o.entrada ?? ''}" oninput="updateOpPreview();updateRiesgo();actualizarSugerencia11()"></div>
+    <div><label>Stop inicial</label><input type="number" step="any" inputmode="decimal" min="0" id="f_stop" value="${o.stop ?? ''}" oninput="updateOpPreview();updateRiesgo();actualizarSugerencia11()"></div>
   </div>
   <label>Contratos</label>
-  <select id="f_contratos" onchange="onContratosChange()">${Array.from({ length: nContr }, (_, i) => i + 1).map(n => `<option value="${n}" ${(o.contratos || 1) == n ? 'selected' : ''}>${n}</option>`).join("")}</select>
-  <div id="f_salidas_container">${renderSalidaInputs(o.contratos || 1, Array.isArray(o.salidas) && o.salidas.length ? o.salidas : (o.salida != null ? [o.salida] : []))}</div>
+  <select id="f_contratos" onchange="onContratosChange()">${opcionesContratos(o.contratos || getContratosDefecto(o.instrumento || DEFAULT_INSTRUMENTO))}</select>
+  <div class="card tight" id="f_riesgo" style="margin:12px 0 0"></div>
+  ${salidasFormHtml(o)}
   <div class="card tight" id="f_preview" style="margin:12px 0 4px"></div>
   <label>Errores cometidos (toca para marcar)</label>
   <div class="chip-row" id="f_errores" style="justify-content:flex-start">
@@ -1854,36 +1882,139 @@ function openOpForm(id) {
   <input id="f_captura" value="${esc(o.capturaURL || '')}" placeholder="https://...">
   <button class="btn btn-primary" style="margin-top:16px" onclick="submitOpForm('${id || ''}')">${isEdit ? 'Guardar cambios' : 'Guardar operación'}</button>`;
   openModal(html);
-  updateOpPreview();
+  onContratosChange();
+  formIni = JSON.stringify(leerPreciosForm()); // para saber, al guardar, si cambiaron los precios
 }
-function renderSalidaInputs(n, existentes) {
-  n = Math.max(1, Math.round(n) || 1);
-  if (n === 1) {
-    const v = existentes && existentes[0] != null ? existentes[0] : '';
-    return `<label>Salida</label><input type="number" step="any" inputmode="decimal" min="0" id="f_salida_0" value="${v}" oninput="updateOpPreview()">`;
+function opcionesContratos(sel, max) {
+  max = Math.max(20, max || 0, sel || 1);
+  return Array.from({ length: max }, (_, i) => i + 1).map(n => `<option value="${n}" ${sel == n ? 'selected' : ''}>${n}</option>`).join("");
+}
+// Riesgo de la operación en € y % del saldo, y contratos recomendados para
+// arriesgar el % objetivo (Más → Límites de riesgo). Se recalcula al cambiar
+// entrada, stop, mercado, modo o contratos.
+function updateRiesgo() {
+  const el = document.getElementById("f_riesgo");
+  if (!el) return;
+  const num = (id) => { const v = document.getElementById(id).value; return v === "" ? NaN : parseFloat(v); };
+  const entrada = num("f_entrada"), stop = num("f_stop");
+  const instr = document.getElementById("f_instrumento").value;
+  const modo = document.getElementById("f_modo").value;
+  const contratos = parseInt(document.getElementById("f_contratos").value, 10) || 1;
+  if (isNaN(entrada) || isNaN(stop) || entrada === stop) {
+    el.innerHTML = `<p class="small" style="margin:0">Pon entrada y stop para ver el riesgo en € y los contratos recomendados.</p>`;
+    return;
   }
-  let html = `<label>Salidas (una por contrato)</label><div class="grid2" style="margin-bottom:0">`;
-  for (let i = 0; i < n; i++) {
-    const v = existentes && existentes[i] != null ? existentes[i] : '';
-    html += `<input type="number" step="any" inputmode="decimal" min="0" placeholder="Salida contrato ${i + 1}" id="f_salida_${i}" value="${v}" oninput="updateOpPreview()">`;
-  }
-  return html + `</div>`;
+  const vp = getValorPunto(instr);
+  const dist = Math.abs(entrada - stop);
+  const saldo = saldoActual(modo);
+  const riesgo = dist * vp * contratos;
+  const pct = saldo > 0 ? riesgo / saldo * 100 : 0;
+  const obj = ajustes.riesgoObjetivoPct, max = ajustes.riesgoMaxPct;
+  const recom = Math.floor((saldo * obj / 100) / (dist * vp));
+  const maxContr = Math.floor((saldo * max / 100) / (dist * vp));
+  const tono = max && pct > max ? "neg" : obj && pct > obj ? "warn" : "pos";
+  const fmtPct = (x) => x.toLocaleString("es-ES", { maximumFractionDigits: 2 }) + " %";
+  el.innerHTML = `
+    <div class="kv"><div class="k">Distancia al stop</div><div>${dist.toLocaleString("es-ES", { maximumFractionDigits: 2 })} pts · ${fmtEUR(vp)}/pt</div></div>
+    <div class="kv"><div class="k">Riesgo con ${contratos} contrato${contratos === 1 ? '' : 's'}</div><div class="${tono}" style="font-weight:800">${fmtEUR(riesgo)} · ${fmtPct(pct)}</div></div>
+    ${recom >= 1
+      ? `<div class="kv"><div class="k">Para arriesgar el ${fmtPct(obj)}</div><div><b>${recom} contrato${recom === 1 ? '' : 's'}</b> <button type="button" class="btn btn-ghost btn-sm" style="margin-left:6px" onclick="aplicarContratos(${recom})">Aplicar</button></div></div>
+         <div class="kv"><div class="k">Máximo (${fmtPct(max)})</div><div>${maxContr} contrato${maxContr === 1 ? '' : 's'}</div></div>`
+      : `<p class="small warn" style="margin:6px 0 0">Con este stop ni 1 contrato cabe en tu ${fmtPct(obj)} (${fmtEUR(saldo * obj / 100)}). Busca un stop más cercano o no operes.</p>`}
+    ${max && pct > max ? `<div class="aviso aviso-red" style="margin:8px 0 0">⛔ Superas tu riesgo máximo por operación (${fmtPct(max)}).</div>` : ""}
+    ${dist / entrada < 0.0005 ? `<p class="small warn" style="margin:6px 0 0">⚠️ Stop muy ajustado (${(dist / entrada * 100).toFixed(3)} % del precio): comprueba que supera el spread del mercado o el ruido te sacará.</p>` : ""}`;
+}
+// En una operación NUEVA, al cambiar de mercado se ponen sus contratos por
+// defecto (Más → Contratos por defecto). Al editar no se toca nada.
+function alCambiarMercado(esNueva) {
+  if (!esNueva) return;
+  aplicarContratos(getContratosDefecto(document.getElementById("f_instrumento").value));
+}
+function aplicarContratos(n) {
+  const sel = document.getElementById("f_contratos");
+  if (!sel) return;
+  if (n > sel.options.length) sel.innerHTML = opcionesContratos(n, n);
+  sel.value = String(n);
+  onContratosChange();
+}
+// ---------- Las dos salidas (gestión de Patry) ----------
+// Salida 1: la mitad de los contratos en 1:1 con el stop inicial.
+// Salida 2: la otra mitad en zona de confluencia. Si el nº es impar, el
+// contrato extra va a la Salida 1. Con 1 contrato solo hay una salida.
+// Casilla "Salió entera en el stop": las dos salidas = precio del stop inicial.
+let formIni = null;
+function repartoContratos(total) {
+  total = Math.max(1, Math.round(total) || 1);
+  if (total === 1) return [1, 0];
+  const c1 = Math.ceil(total / 2);
+  return [c1, total - c1];
+}
+function salidasIniciales(o) {
+  // Operaciones nuevas (dos salidas guardadas) o antiguas (una salida).
+  if (Array.isArray(o.salidas) && o.salidas.length === 2 && Array.isArray(o.contratosPorSalida)) return [o.salidas[0], o.salidas[1]];
+  if (Array.isArray(o.salidas) && o.salidas.length >= 2) return [o.salidas[0], o.salidas[1]];
+  return [o.salida ?? null, o.salida ?? null];
+}
+function salidasFormHtml(o) {
+  const [s1, s2] = salidasIniciales(o);
+  const v = (x) => (x == null ? "" : x);
+  return `
+  <div class="chk-row" style="border:none;padding:12px 0 0">
+    <input type="checkbox" id="f_enstop" ${o.salioEnStop ? "checked" : ""} onchange="onContratosChange()">
+    <div class="txt">Salió entera en el stop inicial</div>
+  </div>
+  <div id="f_bloque_salidas">
+    <div class="grid2" style="margin-bottom:0">
+      <div><label id="f_lbl_s1">Salida 1 · 1:1</label><input type="number" step="any" inputmode="decimal" min="0" id="f_salida_1" value="${v(s1)}" oninput="updateOpPreview()"></div>
+      <div id="f_col_s2"><label id="f_lbl_s2">Salida 2 · confluencia</label><input type="number" step="any" inputmode="decimal" min="0" id="f_salida_2" value="${v(s2)}" oninput="updateOpPreview()"></div>
+    </div>
+    <div id="f_sugerencia" class="small" style="margin-top:6px"></div>
+  </div>`;
 }
 function onContratosChange() {
-  const cont = document.getElementById("f_salidas_container");
-  if (!cont) return;
-  const n = parseInt(document.getElementById("f_contratos").value, 10) || 1;
-  cont.innerHTML = renderSalidaInputs(n, readSalidasFromForm());
+  const sel = document.getElementById("f_contratos");
+  if (!sel) return;
+  const [c1, c2] = repartoContratos(parseInt(sel.value, 10));
+  const enStop = document.getElementById("f_enstop").checked;
+  document.getElementById("f_bloque_salidas").style.display = enStop ? "none" : "";
+  document.getElementById("f_col_s2").style.display = c2 ? "" : "none";
+  document.getElementById("f_lbl_s1").textContent = c2 ? `Salida 1 · 1:1 (${c1} contr.)` : "Salida";
+  document.getElementById("f_lbl_s2").textContent = `Salida 2 · confluencia (${c2} contr.)`;
+  actualizarSugerencia11();
   updateOpPreview();
+  updateRiesgo();
 }
-function readSalidasFromForm() {
-  const salidas = [];
-  for (let i = 0; ; i++) {
-    const el = document.getElementById("f_salida_" + i);
-    if (!el) break;
-    salidas.push(el.value === "" ? null : parseFloat(el.value));
+// Precio del 1:1: entrada ± distancia al stop inicial, a favor de la operación.
+function precio11() {
+  const e = parseFloat(document.getElementById("f_entrada").value);
+  const st = parseFloat(document.getElementById("f_stop").value);
+  if (isNaN(e) || isNaN(st) || e === st) return null;
+  const signo = document.getElementById("f_direccion").value === "CORTO" ? -1 : 1;
+  return Math.round((e + signo * Math.abs(e - st)) * 100) / 100;
+}
+function actualizarSugerencia11() {
+  const el = document.getElementById("f_sugerencia");
+  if (!el) return;
+  const p = precio11();
+  el.innerHTML = p == null ? "Pon entrada y stop inicial para ver el precio del 1:1."
+    : `1:1 en <b>${p.toLocaleString("es-ES", { maximumFractionDigits: 2 })}</b> <button type="button" class="btn btn-ghost btn-sm" style="margin-left:6px;padding:4px 10px" onclick="document.getElementById('f_salida_1').value=precio11();updateOpPreview()">Usar</button>`;
+}
+// Lee del formulario las salidas con sus contratos: [{ salida, contratos }].
+function leerOrdenesForm() {
+  const total = parseInt(document.getElementById("f_contratos").value, 10) || 1;
+  const [c1, c2] = repartoContratos(total);
+  const numv = (id) => { const v = document.getElementById(id).value; return v === "" ? null : parseFloat(v); };
+  if (document.getElementById("f_enstop").checked) {
+    const st = numv("f_stop");
+    return [{ salida: st, contratos: total }];
   }
-  return salidas;
+  const ords = [{ salida: numv("f_salida_1"), contratos: c1 }];
+  if (c2) ords.push({ salida: numv("f_salida_2"), contratos: c2 });
+  return ords;
+}
+function leerPreciosForm() {
+  const g = (id) => document.getElementById(id).value;
+  return [g("f_instrumento"), g("f_direccion"), g("f_entrada"), g("f_stop"), g("f_contratos"), document.getElementById("f_enstop").checked, g("f_salida_1"), g("f_salida_2")];
 }
 function readOpFormResultado() {
   const val = (sel) => { const el = document.getElementById(sel); return el ? el.value : ""; };
@@ -1891,7 +2022,7 @@ function readOpFormResultado() {
   return calcResultado({
     instrumento: val("f_instrumento"), direccion: val("f_direccion"),
     entrada: num("f_entrada"), stop: num("f_stop"),
-    salidas: readSalidasFromForm(), contratos: num("f_contratos"),
+    ordenes: leerOrdenesForm(),
   });
 }
 function updateOpPreview() {
@@ -1899,7 +2030,7 @@ function updateOpPreview() {
   if (!el) return;
   const r = readOpFormResultado();
   if (r.puntos === null) {
-    el.innerHTML = `<p class="small" style="margin:0">Rellena entrada y salida para ver los puntos, el R (si pones el stop) y el resultado en € calculados solos.</p>`;
+    el.innerHTML = `<p class="small" style="margin:0">${document.getElementById("f_enstop").checked ? "Pon entrada y stop inicial" : "Rellena la entrada y las salidas"} para ver los puntos, el R y el resultado en € calculados solos.</p>`;
     return;
   }
   const neto = r.resultadoEUR - (r.comision || 0);
@@ -1913,25 +2044,19 @@ function updateOpPreview() {
 }
 
 // Al editar, los resultados (puntos, R, €, comisión) solo se recalculan si
-// cambian los datos de precio: entrada, stop, salidas, contratos, mercado o
-// dirección. Si solo cambias notas, setup, fecha… se conservan tal cual.
+// cambian los datos de precio: entrada, stop, salidas, contratos, mercado,
+// dirección o la casilla "salió en el stop". Si solo cambias notas, setup, fecha… se conservan tal cual.
 // Y si la operación antigua no tiene salida (resultado metido a mano), nunca
 // se borra su resultado.
-function mismosNumeros(a, b) {
-  const norm = (x) => (typeof x === "number" && !isNaN(x) ? x : null);
-  return norm(a) === norm(b);
-}
-function mismaLista(a, b) {
-  if (a.length !== b.length) return false;
-  return a.every((x, i) => mismosNumeros(x, b[i]));
-}
 function submitOpForm(id) {
   if (!document.getElementById("f_fecha")) return; // formulario ya cerrado (doble toque)
   const val = (sel) => document.getElementById(sel).value;
   const num = (sel) => { const v = val(sel); return v === "" ? null : parseFloat(v); };
   if (!val("f_fecha")) { toast("Falta la fecha"); return; }
-  const salidas = readSalidasFromForm().filter(s => typeof s === "number" && !isNaN(s));
-  const salidaMedia = salidas.length ? salidas.reduce((a, b) => a + b, 0) / salidas.length : null;
+  const ordenes = leerOrdenesForm();
+  const completas = ordenes.every(x => typeof x.salida === "number" && !isNaN(x.salida));
+  const totalC = ordenes.reduce((a, x) => a + x.contratos, 0);
+  const salidaMedia = completas ? ordenes.reduce((a, x) => a + x.salida * x.contratos, 0) / totalC : null;
   const errores = [...document.querySelectorAll("#f_errores .chip.active")].map(b => b.dataset.err);
   const op = {
     tipo: "operacion",
@@ -1945,7 +2070,10 @@ function submitOpForm(id) {
   };
   const calc = readOpFormResultado();
   const resultados = {
-    salida: salidaMedia, salidas: salidas.length > 1 ? salidas : null,
+    salida: salidaMedia,
+    salidas: ordenes.length > 1 ? ordenes.map(x => x.salida) : null,
+    contratosPorSalida: ordenes.length > 1 ? ordenes.map(x => x.contratos) : null,
+    salioEnStop: document.getElementById("f_enstop").checked,
     puntos: calc.puntos, puntosPorSalida: calc.puntosPorSalida,
     resultadoR: calc.resultadoR, resultadoEUR: calc.resultadoEUR, comision: calc.comision,
   };
@@ -1953,10 +2081,7 @@ function submitOpForm(id) {
     Object.assign(op, resultados);
   } else {
     const o = state.ops.find(x => x.id === id) || {};
-    const salidasOrig = (Array.isArray(o.salidas) && o.salidas.length ? o.salidas : (o.salida != null ? [o.salida] : []));
-    const cambioPrecios = !mismosNumeros(o.entrada, op.entrada) || !mismosNumeros(o.stop, op.stop)
-      || !mismaLista(salidasOrig, salidas) || (o.contratos || 1) !== op.contratos
-      || (o.instrumento || DEFAULT_INSTRUMENTO) !== op.instrumento || (o.direccion || "LARGO") !== op.direccion;
+    const cambioPrecios = JSON.stringify(leerPreciosForm()) !== formIni;
     const sinSalidaConResultado = calc.puntos === null && typeof o.resultadoEUR === "number";
     if (cambioPrecios && !sinSalidaConResultado) Object.assign(op, resultados);
     // Si no cambian los precios, el payload no lleva resultados: Firestore
@@ -2249,10 +2374,23 @@ function renderMas() {
       <div><label>Pérdida máx. diaria (% saldo)</label><input type="number" step="any" inputmode="decimal" min="0" id="aj_perdida" value="${ajustes.perdidaMaxDiariaPct}"></div>
       <div><label>Máx. operaciones / día</label><input type="number" step="1" inputmode="numeric" min="0" id="aj_maxops" value="${ajustes.maxOpsDia}"></div>
     </div>
+    <div class="grid2" style="margin-bottom:0">
+      <div><label>Riesgo objetivo / op (%)</label><input type="number" step="any" inputmode="decimal" min="0" id="aj_robj" value="${ajustes.riesgoObjetivoPct}"></div>
+      <div><label>Riesgo máximo / op (%)</label><input type="number" step="any" inputmode="decimal" min="0" id="aj_rmax" value="${ajustes.riesgoMaxPct}"></div>
+    </div>
     <label>Margen de Break Even (± € neto)</label>
     <input type="number" step="any" inputmode="decimal" min="0" id="aj_be" value="${ajustes.beMargen}">
     <button class="btn btn-primary" style="margin-top:12px" onclick="saveRiesgo()">Guardar</button>
     <p class="small" style="margin-top:10px">Al llegar a un límite, Inicio y el formulario de nueva operación te avisan (no bloquean). Una operación con resultado neto dentro de ±${fmtEUR(ajustes.beMargen)} cuenta como BE: no suma al winrate ni corta la racha. Pon 0 si no quieres usar un límite.</p>
+  </div>
+
+  <div class="card">
+    <h3>Contratos por defecto por mercado</h3>
+    <div class="grid2">
+      ${Object.keys(INSTRUMENTOS).map(k => `<div><label>${INSTRUMENTOS[k].nombre}</label><input type="number" step="1" inputmode="numeric" min="1" id="cd_${k}" value="${getContratosDefecto(k)}"></div>`).join("")}
+    </div>
+    <button class="btn btn-primary" onclick="saveContratosDefecto()">Guardar contratos por defecto</button>
+    <p class="small" style="margin-top:10px">Con los que se abre una operación nueva en cada mercado. Por defecto, equivalentes a 2 contratos de Nasdaq (todos a 1 €/punto): Oro 14, S&amp;P 9, Dow 1. El recuadro de riesgo te dirá igualmente si para el stop de ese día conviene otra cifra.</p>
   </div>
 
   <div class="card">
@@ -2284,9 +2422,9 @@ function renderMas() {
     <h3>Calculadora de posición</h3>
     <div class="grid2" style="margin-bottom:0">
       <div><label>Capital (€)</label><input type="number" inputmode="decimal" min="0" id="c_capital" value="${Math.round(saldo * 100) / 100}"></div>
-      <div><label>Riesgo por operación (%)</label><input type="number" inputmode="decimal" min="0" step="any" id="c_riesgo" value="1"></div>
+      <div><label>Riesgo por operación (%)</label><input type="number" inputmode="decimal" min="0" step="any" id="c_riesgo" value="${ajustes.riesgoObjetivoPct}"></div>
     </div>
-    <p class="small" style="margin:4px 0 0">Capital = saldo actual en modo ${state.modo === 'demo' ? 'Demo' : 'Real'}. El sistema permite máximo 1-2%.</p>
+    <p class="small" style="margin:4px 0 0">Capital = saldo actual en modo ${state.modo === 'demo' ? 'Demo' : 'Real'}. Tu objetivo: ${ajustes.riesgoObjetivoPct} % · máximo ${ajustes.riesgoMaxPct} %.</p>
     <label>Mercado</label>
     <select id="c_instr" onchange="document.getElementById('c_valorpunto').value=getValorPunto(this.value)">${Object.keys(INSTRUMENTOS).map(k => `<option value="${k}" ${k === DEFAULT_INSTRUMENTO ? 'selected' : ''}>${INSTRUMENTOS[k].nombre}</option>`).join("")}</select>
     <div class="grid3" style="margin-bottom:0">
@@ -2339,7 +2477,14 @@ function saveRiesgo() {
     perdidaMaxDiariaPct: Math.max(0, leerNum("aj_perdida", 0)),
     maxOpsDia: Math.max(0, Math.round(leerNum("aj_maxops", 0))),
     beMargen: Math.max(0, leerNum("aj_be", 0)),
+    riesgoObjetivoPct: Math.max(0, leerNum("aj_robj", 0.5)),
+    riesgoMaxPct: Math.max(0, leerNum("aj_rmax", 1)),
   }, "Límites guardados");
+}
+function saveContratosDefecto() {
+  const contratosDefecto = {};
+  Object.keys(INSTRUMENTOS).forEach(k => { contratosDefecto[k] = Math.max(1, Math.round(leerNum("cd_" + k, 1))); });
+  guardarAjustes({ contratosDefecto }, "Contratos por defecto guardados");
 }
 function saveComisiones() {
   const comisiones = {};
@@ -2425,7 +2570,7 @@ function seedTestData() {
     [4, "real", "SP500", "LARGO", 5000, 4990, 5019, "Continuidad", []],
   ];
   const ops = filas.map(([dias, modo, instrumento, direccion, entrada, stop, salida, tipoSetup, errores]) => {
-    const calc = calcResultado({ instrumento, direccion, entrada, stop, salidas: [salida], contratos: 1 });
+    const calc = calcResultado({ instrumento, direccion, entrada, stop, ordenes: [{ salida, contratos: 1 }] });
     return {
       _test: true, tipo: "operacion", fecha: fechaHace(dias), hora: "10:" + String(10 + dias % 40).padStart(2, "0"),
       modo, instrumento, direccion, entrada, stop, salida, contratos: 1, tipoSetup, errores,
