@@ -195,7 +195,126 @@ tr:last-child td{border-bottom:none;}
 .ficha-t{font-weight:700;text-transform:uppercase;letter-spacing:1.4px;font-size:11px;color:var(--silver);margin-bottom:8px !important;}
 .ficha-oro{margin-top:8px;color:var(--gold);font-family:'Crimson Pro',Georgia,serif;font-style:italic;font-size:14px;}
 .accordion-body ol{padding-left:20px;} .accordion-body li{margin-bottom:6px;}
+/* ===== Rediseño compacto (01/10/2026) ===== */
+.modo-toggle{margin-bottom:12px;padding:3px;border-radius:12px;}
+.modo-btn{padding:7px 0;font-size:11.5px;}
+.mini{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;line-height:1.2;}
+/* Inicio: tira "Hoy" */
+.hoy{display:flex;align-items:center;gap:12px;padding:10px 14px;}
+.hoy .tag{font-size:10px;font-weight:800;letter-spacing:1.6px;color:var(--silver);text-transform:uppercase;}
+.hoy .it{display:flex;flex-direction:column;gap:1px;min-width:0;}
+.hoy .it b{font-size:16px;line-height:1.1;}
+.hoy .sep{width:1px;align-self:stretch;background:var(--border);}
+.hoy .bar{height:4px;border-radius:2px;background:var(--bg2);overflow:hidden;margin-top:4px;}
+.hoy .bar i{display:block;height:100%;border-radius:2px;}
+.hoy-aviso{font-size:12px;line-height:1.35;padding:7px 14px 9px;border-top:1px solid var(--border);}
+/* Inicio: bloque de cifras */
+.kpis6{display:grid;grid-template-columns:repeat(3,1fr);padding:4px 0;}
+.kpis6 > div{padding:9px 12px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);min-width:0;}
+.kpis6 > div:nth-child(3n){border-right:none;}
+.kpis6 > div:nth-last-child(-n+3){border-bottom:none;}
+.kpis6 .v{font-size:18px;font-weight:700;letter-spacing:-.3px;line-height:1.15;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.kpis6 .s{font-size:10.5px;color:var(--muted2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* Gráfica compacta en Okartap (sin tocar el bloque compartido) */
+#okcDash,#okcStats{padding:12px 12px 10px;}
+#okcDash .okc-head,#okcStats .okc-head{margin-bottom:8px;}
+#okcDash .okc-kpis,#okcStats .okc-kpis{gap:6px;margin-bottom:8px;}
+#okcDash .okc-kpi,#okcStats .okc-kpi{padding:6px 3px;border-radius:8px;}
+#okcDash .okc-kpi .v,#okcStats .okc-kpi .v{font-size:clamp(11.5px,3.3vw,14px);}
+#okcDash .okc-kpi .l,#okcStats .okc-kpi .l{font-size:8.5px;}
+#okcDash .okc-seg button,#okcStats .okc-seg button{padding:5px 8px;font-size:10.5px;}
+/* Formulario compacto */
+.fm label{margin:10px 0 4px;font-size:9.5px;letter-spacing:1.1px;}
+.fm input,.fm select,.fm textarea{padding:8px 10px;border-radius:9px;min-width:0;}
+.fm input[type=date],.fm input[type=time]{padding:8px 6px;}
+.fm .r3{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,.95fr);gap:8px;}
+.fm .r3b{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.fm .r2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.fm .lrow{display:flex;justify-content:space-between;align-items:baseline;gap:6px;}
+.fm .lrow a{font-size:10px;letter-spacing:.3px;text-transform:none;color:var(--accent2);font-weight:700;text-decoration:none;white-space:nowrap;}
+.fm .sect{display:flex;justify-content:space-between;align-items:center;margin:14px 0 2px;}
+.fm .sect .t{font-size:10px;font-weight:800;letter-spacing:1.6px;color:var(--silver);text-transform:uppercase;}
+.sw{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);font-weight:600;cursor:pointer;}
+.sw input{width:16px;height:16px;padding:0;accent-color:var(--red);}
+.fm .chip{padding:5px 10px;font-size:10.5px;}
+/* Recuadro de riesgo y resultado */
+.rk{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-top:10px;overflow:hidden;}
+.rk .row3{display:grid;grid-template-columns:1.25fr 1fr 1.15fr;}
+.rk .row3 > div{padding:8px 10px;border-right:1px solid var(--border);min-width:0;}
+.rk .row3 > div:last-child{border-right:none;}
+.rk .v{font-size:15px;font-weight:800;line-height:1.2;white-space:nowrap;}
+.rk .msg{font-size:11.5px;line-height:1.35;padding:6px 10px;border-top:1px solid var(--border);}
+.rk .ap{background:none;border:1px solid var(--border);color:var(--accent2);font:700 10px 'Rajdhani';letter-spacing:.6px;border-radius:6px;padding:2px 6px;margin-left:4px;text-transform:uppercase;}
+.rk.empty{padding:9px 12px;font-size:12px;color:var(--muted);font-family:'Crimson Pro',Georgia,serif;font-style:italic;}
+/* Ficha de operación */
+.det-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin:10px 0;}
+.det-hero .big{font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1;}
+.det-hero .sub{font-size:12.5px;color:var(--muted);margin-top:5px;font-weight:600;}
+.det-hero .rt{text-align:right;font-size:12px;color:var(--muted);line-height:1.5;font-weight:600;}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;}
+.tiles .tl{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:7px 9px;min-width:0;}
+.tiles .tl.w2{grid-column:span 2;}
+.tiles .tl.w3{grid-column:span 3;}
+.tiles .tl .v{font-size:15px;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tiles .tl .s{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.txtb{margin-bottom:8px;}
+.txtb .tx{font-size:13.5px;color:var(--text);line-height:1.45;margin-top:3px;white-space:pre-wrap;}
+.det-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px;}
 canvas{width:100%;display:block;}
+/* ===== TODO CENTRADO (petición de Patry, 01/10/2026) ===== */
+.card,.card p,.card h3,.card h4,.stat,.kpi,.empty{text-align:center;}
+h1,h2,h3,h4{text-align:center;}
+.block-header{justify-content:center;gap:12px;flex-wrap:wrap;}
+.chip-row,#f_errores,.det-badges,.btn-row{justify-content:center !important;}
+/* Filas etiqueta / valor: etiqueta encima, valor debajo, todo centrado */
+.kv{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:3px;}
+.kv > div{text-align:center !important;max-width:100% !important;}
+/* Inicio */
+.hoy{justify-content:center;text-align:center;}
+.hoy .it{align-items:center;}
+.hoy-aviso{text-align:center;}
+.kpis6 > div{text-align:center;}
+/* Diario */
+.day-head{justify-content:center;gap:10px;}
+.op-item .mid{text-align:center;}
+.op-item .mid .l1{justify-content:center;}
+/* Formulario */
+.fm label,.fm .mini{text-align:center;}
+.fm .lrow{justify-content:center;flex-wrap:wrap;}
+.fm .sect{flex-direction:column;gap:6px;}
+.fm input,.fm select,.fm textarea{text-align:center;text-align-last:center;}
+.fm input[type=date],.fm input[type=time]{text-align:center;}
+.fm input[type=date]::-webkit-date-and-time-value,.fm input[type=time]::-webkit-date-and-time-value{text-align:center;}
+input,select,textarea{text-align:center;text-align-last:center;}
+label{text-align:center;}
+.rk,.rk .row3 > div,.rk .msg{text-align:center;}
+/* Ficha */
+.modal-title{position:relative;justify-content:center;}
+.modal-title > div,.modal-title h2{text-align:center;width:100%;}
+.modal-title button.close{position:absolute;right:0;top:0;}
+.det-hero{flex-direction:column;align-items:center;text-align:center;}
+.det-hero .rt{text-align:center;}
+.tiles .tl,.txtb{text-align:center;}
+/* Gráfica (solo en Okartap) */
+#okcDash .okc-head,#okcStats .okc-head{flex-direction:column;justify-content:center;}
+#okcDash .okc-title,#okcStats .okc-title{text-align:center;}
+#okcDash .okc-legend,#okcStats .okc-legend{justify-content:center;}
+#okcDash .okc-btn,#okcStats .okc-btn{display:block;margin:12px auto 0;}
+#okcDash .okc-tbl th,#okcDash .okc-tbl td,#okcStats .okc-tbl th,#okcStats .okc-tbl td{text-align:center !important;}
+/* Tablas, guía y avisos */
+th,td{text-align:center !important;}
+.accordion-head{justify-content:center;gap:10px;}
+.accordion-body,.accordion-body p,.accordion-body .rule,.ficha,.aviso,.searchbar input,.small{text-align:center;}
+.accordion-body ol,.accordion-body ul{list-style-position:inside;padding-left:0;}
+.searchbar input{padding-right:36px;}
+#loginScreen label{text-align:center;}
+/* Filas del Diario: todo en columna y centrado */
+.op-item{flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center;}
+.op-item .dot,.op-item .chev{display:none;}
+.op-item .mid{flex:none;width:100%;}
+.op-item .r{text-align:center;font-size:17px;}
+.searchbar input{padding-left:36px;padding-right:36px;}
+
 </style>
 </head>
 <body>
@@ -1611,38 +1730,48 @@ function modoToggleHtml() {
     <button class="modo-btn ${state.modo === 'real' ? 'active' : ''}" onclick="state.modo='real';render()">Real</button>
   </div>`;
 }
-
+// Tira compacta "Hoy": operaciones del día, neto y consumo del límite de pérdida.
 function riesgoHoyCardHtml() {
   const r = estadoRiesgoHoy(state.modo);
   const colOps = r.opsAlcanzadas ? "neg" : "";
   const colNet = r.perdidaAlcanzada ? "neg" : r.cerca ? "warn" : (r.netoHoy > 0 ? "pos" : r.netoHoy < 0 ? "neg" : "");
+  const uso = r.limiteEUR > 0 && r.netoHoy < 0 ? Math.min(100, -r.netoHoy / r.limiteEUR * 100) : 0;
+  const colBar = r.perdidaAlcanzada ? "var(--red)" : r.cerca ? "var(--amber)" : "var(--muted2)";
+  let aviso = "";
+  if (r.parar) aviso = `<div class="hoy-aviso neg">⛔ ${r.perdidaAlcanzada ? "Pérdida máxima diaria alcanzada" : `Máximo de ${r.maxOps} operaciones alcanzado`} — tu plan dice parar por hoy.</div>`;
+  else if (r.cerca) aviso = `<div class="hoy-aviso warn">⚠️ Cerca del límite de pérdida diaria.</div>`;
   return `
-  <div class="card tight">
-    <div class="block-header" style="margin-top:0"><h3 style="margin:0">Hoy · límites de riesgo</h3><a href="#" class="small" onclick="goTab('mas');return false;">Ajustar</a></div>
-    <div class="grid2" style="margin:10px 0 0">
-      <div class="stat"><div class="v ${colOps}">${r.nOps}${r.maxOps ? " / " + r.maxOps : ""}</div><div class="l">Operaciones hoy</div></div>
-      <div class="stat"><div class="v ${colNet}">${fmtEUR(r.netoHoy, true)}</div><div class="l">Neto hoy · límite ${r.limiteEUR ? fmtEUR(-r.limiteEUR) : "—"}</div></div>
+  <div class="card" style="padding:0;margin-bottom:12px" onclick="goTab('mas')">
+    <div class="hoy">
+      <div class="tag">Hoy</div>
+      <div class="sep"></div>
+      <div class="it"><b class="${colOps}">${r.nOps}${r.maxOps ? `<span style="color:var(--muted2);font-weight:600"> / ${r.maxOps}</span>` : ""}</b><span class="mini">operaciones</span></div>
+      <div class="sep"></div>
+      <div class="it" style="flex:1"><b class="${colNet}">${fmtEUR(r.netoHoy, true)}</b><span class="mini">neto · límite ${r.limiteEUR ? fmtEUR(-r.limiteEUR) : "—"}</span>
+        ${r.limiteEUR ? `<div class="bar"><i style="width:${uso}%;background:${colBar}"></i></div>` : ""}</div>
     </div>
-    ${avisoRiesgoHtml(r) ? `<div style="margin-top:10px">${avisoRiesgoHtml(r)}</div>` : ""}
+    ${aviso}
   </div>`;
 }
-
 function renderDashboard() {
   const ops = opsDeModo(state.modo);
   const m = calcMetricas(ops);
   const racha = computeStreak(ops);
   const last5 = state.ops.filter(o => (o.modo || "demo") === state.modo).slice(0, 5);
+  const cls = (x) => x == null ? "" : x >= 0 ? "pos" : "neg";
+  const pf = m.profitFactor === Infinity ? "∞" : m.profitFactor == null ? "—" : m.profitFactor.toFixed(2);
   return `
   ${modoToggleHtml()}
   ${riesgoHoyCardHtml()}
-  <div class="grid3">
-    <div class="stat"><div class="v">${m.n}</div><div class="l">Operaciones</div></div>
-    <div class="stat"><div class="v ${m.winrate == null ? '' : m.winrate >= 50 ? 'pos' : 'neg'}">${m.winrate == null ? "—" : m.winrate + "%"}</div><div class="l">Winrate</div></div>
-    <div class="stat"><div class="v ${m.netTotal >= 0 ? 'pos' : 'neg'}">${fmtEUR(m.netTotal, true)}</div><div class="l">Resultado neto</div></div>
-  </div>
-  <div class="grid2">
-    <div class="stat"><div class="v ${m.expectancy == null ? '' : m.expectancy >= 0 ? 'pos' : 'neg'}">${fmtR(m.expectancy)}</div><div class="l">R media${m.sinStop ? ` · ${m.sinStop} sin stop fuera` : ""}</div></div>
-    <div class="stat"><div class="v ${racha.n ? (racha.tipo === 'win' ? 'pos' : 'neg') : ''}">${racha.n ? racha.n + (racha.tipo === 'win' ? ' 🟢' : ' 🔴') : '—'}</div><div class="l">Racha actual</div></div>
+  <div class="card" style="padding:0;margin-bottom:12px">
+    <div class="kpis6">
+      <div><div class="mini">Operaciones</div><div class="v">${m.n}</div><div class="s">${m.wins}G · ${m.losses}P · ${m.bes}BE</div></div>
+      <div><div class="mini">Winrate</div><div class="v ${m.winrate == null ? '' : m.winrate >= 50 ? 'pos' : 'neg'}">${m.winrate == null ? "—" : m.winrate + "%"}</div><div class="s">sin contar BE</div></div>
+      <div><div class="mini">Racha</div><div class="v ${racha.n ? (racha.tipo === 'win' ? 'pos' : 'neg') : ''}">${racha.n ? racha.n + (racha.tipo === 'win' ? " ganadas" : " perdidas") : "—"}</div><div class="s">seguidas</div></div>
+      <div><div class="mini">Neto</div><div class="v ${cls(m.netTotal)}">${fmtEUR(m.netTotal, true)}</div><div class="s">tras comisiones</div></div>
+      <div><div class="mini">R media</div><div class="v ${cls(m.expectancy)}">${fmtR(m.expectancy)}</div><div class="s">${m.sinStop ? m.sinStop + " sin stop fuera" : "por operación"}</div></div>
+      <div><div class="mini">Profit factor</div><div class="v ${m.profitFactor != null && m.profitFactor >= 1 ? 'pos' : m.profitFactor == null ? '' : 'neg'}">${pf}</div><div class="s">ganado ÷ perdido</div></div>
+    </div>
   </div>
 
   <div class="card" id="okcDash"></div>
@@ -1699,7 +1828,7 @@ function opItemHtml(o) {
   <div class="op-item" onclick="openOpDetail('${o.id}')">
     <div class="dot ${modo}" title="${modo === 'real' ? 'Cuenta real' : 'Cuenta demo'}"></div>
     <div class="mid">
-      <div class="l1">${dirBadge}<span class="badge instr">${esc(nombreInstr(o.instrumento))}</span>${extra}</div>
+      <div class="l1">${dirBadge}<span class="badge instr">${esc(nombreInstr(o.instrumento))}</span>${modo === 'real' ? '<span class="badge modo-real">Real</span>' : ''}${extra}</div>
       <div class="l2">${fmtDate(o.fecha)} ${esc(o.hora || '')}${detalle}</div>
     </div>
     <div class="r ${toneTipo(t)}">${isSkip ? '—' : (typeof neto === "number" ? fmtEUR(neto, true) : fmtR(o.resultadoR))}</div>
@@ -1736,7 +1865,7 @@ function renderDiario() {
   return `
   <div class="searchbar">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-    <input placeholder="Buscar en setup, notas, gestión o errores…" value="${esc(state.diarioSearch)}" oninput="state.diarioSearch=this.value;refreshDiarioList()">
+    <input placeholder="Buscar en el diario" value="${esc(state.diarioSearch)}" oninput="state.diarioSearch=this.value;refreshDiarioList()">
   </div>
   <div class="chip-row">${modoChips.map(([k, l]) => `<button class="chip ${dm === k ? 'active' : ''}" onclick="state.diarioModo='${k}';render()">${l}</button>`).join("")}</div>
   <div class="chip-row">${chips.map(([k, l]) => `<button class="chip ${f === k ? 'active' : ''}" onclick="state.diarioFilter='${k}';render()">${l}</button>`).join("")}</div>
@@ -1776,53 +1905,61 @@ function openOpDetail(id) {
   const t = resultadoTipo(o);
   const neto = netEUR(o);
   const etiquetaTipo = { win: "Ganada", loss: "Perdida", be: "Break Even", nd: "Sin resultado" }[t] || "";
-  const html = `
-  <div class="modal-handle"></div>
-  <div class="modal-title"><h2>${fmtDate(o.fecha)} · ${esc(o.hora || '')}</h2><button class="close" onclick="closeModal()">✕</button></div>
-  <div class="chip-row">
+  const num = (x) => (typeof x === "number" ? x.toLocaleString("es-ES", { maximumFractionDigits: 2 }) : "—");
+  const tile = (l, v, sub, cls, w) => `<div class="tl ${w || ''}"><div class="mini">${l}</div><div class="v ${cls || ''}">${v}</div>${sub ? `<div class="s">${sub}</div>` : ""}</div>`;
+  const txt = (l, v) => v ? `<div class="txtb"><div class="mini">${l}</div><div class="tx">${esc(v)}</div></div>` : "";
+  const badges = `<div class="det-badges">
     <span class="badge instr">${esc(nombreInstr(o.instrumento))}</span>
     ${isSkip ? `<span class="badge skip">No operó</span>` : `<span class="badge ${o.direccion === 'LARGO' ? 'long' : 'short'}">${esc(o.direccion)}</span>`}
     <span class="badge modo-${o.modo || 'demo'}">${(o.modo || 'demo') === 'real' ? 'Real' : 'Demo'}</span>
-    ${!isSkip && etiquetaTipo ? `<span class="badge ${t === 'win' ? 'long' : t === 'loss' ? 'short' : 'skip'}">${etiquetaTipo}</span>` : ""}
     ${o.tipoSetup ? `<span class="badge instr">${esc(o.tipoSetup)}</span>` : ""}
     ${o.puntuacion !== undefined ? `<span class="badge instr">${o.puntuacion}/5 bloques</span>` : ""}
-  </div>
-  ${isSkip ? `
-    <div class="kv"><div class="k">Motivo</div><div style="text-align:right;max-width:70%">${esc(o.motivoDescartada || '—')}</div></div>
-  ` : `
-    <div class="kv"><div class="k">Entrada</div><div>${o.entrada ?? '—'}</div></div>
-    <div class="kv"><div class="k">Stop inicial</div><div>${o.stop ?? '—'}</div></div>
-    ${detalleSalidasHtml(o)}
-    ${o.tp1 !== undefined ? `<div class="kv"><div class="k">TP1</div><div>${o.tp1}</div></div>` : ""}
-    <div class="kv"><div class="k">Contratos</div><div>${o.contratos ?? '—'}</div></div>
-    ${typeof o.puntos === 'number' ? `<div class="kv"><div class="k">Puntos</div><div class="${o.puntos > 0 ? 'pos' : o.puntos < 0 ? 'neg' : ''}">${(o.puntos > 0 ? '+' : '') + o.puntos.toFixed(2)} pts</div></div>` : ""}
-    <div class="kv"><div class="k">Resultado (R)</div><div>${typeof o.resultadoR === 'number' ? fmtR(o.resultadoR) : '— (sin stop)'}</div></div>
-    ${typeof o.resultadoEUR === 'number' ? `<div class="kv"><div class="k">Resultado bruto</div><div>${fmtEUR(o.resultadoEUR, true)}</div></div>` : ""}
-    ${o.comision ? `<div class="kv"><div class="k">Comisión</div><div class="neg">-${fmtEUR(o.comision)}</div></div>` : ""}
-    ${typeof neto === 'number' ? `<div class="kv"><div class="k">Resultado neto</div><div class="${toneTipo(t)}" style="font-weight:800">${fmtEUR(neto, true)}</div></div>` : ""}
-    <div class="kv"><div class="k">Setup</div><div style="text-align:right;max-width:70%">${esc(o.setup || '—')}</div></div>
-    <div class="kv"><div class="k">Gestión</div><div style="text-align:right;max-width:70%">${esc(o.gestion || '—')}</div></div>
-    <div class="kv"><div class="k">Errores</div><div style="text-align:right;max-width:70%">${Array.isArray(o.errores) && o.errores.length ? o.errores.map(e => `<span class="badge short" style="margin:2px">${esc(e)}</span>`).join("") : 'Ninguno'}</div></div>
-  `}
-  <div class="kv"><div class="k">Notas</div><div style="text-align:right;max-width:70%">${esc(o.notas || '—')}</div></div>
-  ${o.capturaURL && /^https?:\/\//i.test(o.capturaURL) ? `<div class="kv"><div class="k">Captura</div><div><a href="${esc(o.capturaURL)}" target="_blank" rel="noopener">Ver imagen</a></div></div>` : ""}
-  <div class="btn-row" style="margin-top:16px">
-    ${isSkip ? "" : `<button class="btn btn-ghost" onclick="openOpForm('${o.id}')">Editar</button>`}
-    <button class="btn btn-red" onclick="confirmDeleteOp('${o.id}')">Eliminar</button>
+  </div>`;
+  let cuerpo;
+  if (isSkip) {
+    cuerpo = txt("Motivo", o.motivoDescartada || "—");
+  } else {
+    const pts = typeof o.puntos === "number" ? `${o.puntos > 0 ? "+" : ""}${num(o.puntos)} pts` : "";
+    const rr = typeof o.resultadoR === "number" ? fmtR(o.resultadoR) : "sin R";
+    cuerpo = `
+    <div class="det-hero">
+      <div><div class="mini">${etiquetaTipo || "Resultado"} · neto</div>
+        <div class="big ${toneTipo(t)}">${typeof neto === "number" ? fmtEUR(neto, true) : fmtR(o.resultadoR)}</div>
+        <div class="sub">${[pts, rr].filter(Boolean).join(" · ")}</div></div>
+      <div class="rt">${typeof o.resultadoEUR === "number" ? `Bruto ${fmtEUR(o.resultadoEUR, true)}` : ""}${o.comision ? `<br>Comisión −${fmtEUR(o.comision)}` : ""}</div>
+    </div>
+    <div class="tiles">
+      ${tile("Entrada", num(o.entrada))}
+      ${tile("Stop inicial", num(o.stop), typeof o.stop === "number" && typeof o.entrada === "number" ? `${num(Math.abs(o.entrada - o.stop))} pts` : "")}
+      ${tile("Contratos", o.contratos ?? "—")}
+      ${detalleSalidasHtml(o, tile, num)}
+      ${o.tp1 !== undefined ? tile("TP1", num(o.tp1)) : ""}
+    </div>
+    ${Array.isArray(o.errores) && o.errores.length ? `<div class="txtb"><div class="mini">Errores</div><div class="det-badges" style="margin-top:4px">${o.errores.map(e => `<span class="badge short">${esc(e)}</span>`).join("")}</div></div>` : ""}
+    ${txt("Setup", o.setup)}${txt("Gestión", o.gestion)}`;
+  }
+  const html = `
+  <div class="modal-handle"></div>
+  <div class="modal-title" style="margin-bottom:8px;padding-bottom:10px"><div><h2>${fmtDate(o.fecha)} · ${esc(o.hora || '')}</h2>${badges}</div><button class="close" onclick="closeModal()">✕</button></div>
+  ${cuerpo}
+  ${txt("Notas", o.notas)}
+  ${o.capturaURL && /^https?:\/\//i.test(o.capturaURL) ? `<div class="txtb"><a href="${esc(o.capturaURL)}" target="_blank" rel="noopener">📷 Ver captura</a></div>` : ""}
+  <div class="btn-row" style="margin-top:12px">
+    ${isSkip ? "" : `<button class="btn btn-ghost btn-sm" style="flex:1;padding:11px" onclick="openOpForm('${o.id}')">Editar</button>`}
+    <button class="btn btn-red btn-sm" style="flex:1;padding:11px" onclick="confirmDeleteOp('${o.id}')">Eliminar</button>
   </div>`;
   openModal(html);
 }
-function detalleSalidasHtml(o) {
-  if (o.salioEnStop) return `<div class="kv"><div class="k">Salida</div><div>Entera en el stop · ${o.salida ?? '—'}</div></div>`;
+function detalleSalidasHtml(o, tile, num) {
+  const pts = (p) => typeof p === "number" ? `${p > 0 ? "+" : ""}${num(p)} pts` : "";
+  if (o.salioEnStop) return tile("Salida", num(o.salida), "entera en el stop", "", "w3");
   if (Array.isArray(o.salidas) && o.salidas.length === 2 && Array.isArray(o.contratosPorSalida)) {
     const pp = Array.isArray(o.puntosPorSalida) ? o.puntosPorSalida : [];
-    const pts = (i) => typeof pp[i] === "number" ? ` · ${(pp[i] > 0 ? "+" : "") + pp[i].toFixed(2)} pts` : "";
-    return `<div class="kv"><div class="k">Salida 1 · 1:1</div><div>${o.salidas[0]} · ${o.contratosPorSalida[0]} contr.${pts(0)}</div></div>
-            <div class="kv"><div class="k">Salida 2 · confluencia</div><div>${o.salidas[1]} · ${o.contratosPorSalida[1]} contr.${pts(1)}</div></div>`;
+    return tile("Salida 1 · 1:1", num(o.salidas[0]), `${o.contratosPorSalida[0]} contr. · ${pts(pp[0])}`, "", "")
+      + tile("Salida 2 · confluencia", num(o.salidas[1]), `${o.contratosPorSalida[1]} contr. · ${pts(pp[1])}`, "", "w2");
   }
-  if (Array.isArray(o.salidas) && o.salidas.length > 1)
-    return `<div class="kv"><div class="k">Salidas</div><div>${o.salidas.join(' / ')} <span class="small">(media ${typeof o.salida === 'number' ? o.salida.toFixed(2) : '—'})</span></div></div>`;
-  return `<div class="kv"><div class="k">Salida</div><div>${o.salida ?? '—'}</div></div>`;
+  if (Array.isArray(o.salidas) && o.salidas.length > 1) return tile("Salidas", o.salidas.map(num).join(" / "), `media ${num(o.salida)}`, "", "w3");
+  return tile("Salida", num(o.salida), "", "", "w3");
 }
 function confirmDeleteOp(id) {
   if (!confirm("¿Eliminar este registro? No se puede deshacer.")) return;
@@ -1840,47 +1977,42 @@ function openOpForm(id) {
   const etiquetasOp = Array.isArray(o.errores) ? o.errores : [];
   const etiquetasLista = [...ajustes.etiquetas, ...etiquetasOp.filter(e => !ajustes.etiquetas.includes(e))];
   const html = `
+  <div class="fm">
   <div class="modal-handle"></div>
-  <div class="modal-title"><h2>${isEdit ? "Editar operación" : "Nueva operación"}</h2><button class="close" onclick="closeModal()">✕</button></div>
+  <div class="modal-title" style="margin-bottom:2px;padding-bottom:10px"><h2>${isEdit ? "Editar operación" : "Nueva operación"}</h2><button class="close" onclick="closeModal()">✕</button></div>
   ${aviso}
-  <div class="grid2" style="margin-bottom:0">
+  <div class="r3">
     <div><label>Fecha</label><input type="date" id="f_fecha" value="${esc(o.fecha || todayStr())}"></div>
     <div><label>Hora</label><input type="time" id="f_hora" value="${esc(o.hora || nowHM())}"></div>
+    <div><label>Modo</label><select id="f_modo" onchange="updateRiesgo()"><option value="demo" ${modoIni === 'demo' ? 'selected' : ''}>Demo</option><option value="real" ${modoIni === 'real' ? 'selected' : ''}>Real</option></select></div>
   </div>
-  <div class="grid2" style="margin-bottom:0">
-    <div><label>Modo</label>
-      <select id="f_modo" onchange="updateRiesgo()"><option value="demo" ${modoIni === 'demo' ? 'selected' : ''}>Demo</option><option value="real" ${modoIni === 'real' ? 'selected' : ''}>Real</option></select></div>
-    <div><label>Mercado</label>
-      <select id="f_instrumento" oninput="alCambiarMercado(${isEdit ? 'false' : 'true'});updateOpPreview();updateRiesgo();actualizarSugerencia11()">${Object.keys(INSTRUMENTOS).map(k => `<option value="${k}" ${(o.instrumento || DEFAULT_INSTRUMENTO) === k ? 'selected' : ''}>${INSTRUMENTOS[k].nombre}</option>`).join("")}</select></div>
+  <div class="r3b">
+    <div><label>Mercado</label><select id="f_instrumento" oninput="alCambiarMercado(${isEdit ? 'false' : 'true'});updateOpPreview();updateRiesgo();actualizarSugerencia11()">${Object.keys(INSTRUMENTOS).map(k => `<option value="${k}" ${(o.instrumento || DEFAULT_INSTRUMENTO) === k ? 'selected' : ''}>${INSTRUMENTOS[k].corto}</option>`).join("")}</select></div>
+    <div><label>Dirección</label><select id="f_direccion" oninput="updateOpPreview();actualizarSugerencia11()"><option value="LARGO" ${o.direccion === 'LARGO' ? 'selected' : ''}>Largo</option><option value="CORTO" ${o.direccion === 'CORTO' ? 'selected' : ''}>Corto</option></select></div>
+    <div><label>Setup</label><select id="f_tiposetup"><option value="">—</option>${TIPOS_SETUP.map(t => `<option value="${t}" ${o.tipoSetup === t ? 'selected' : ''}>${t === "Testeo a zona perdida" ? "Testeo" : t}</option>`).join("")}</select></div>
   </div>
-  <div class="grid2" style="margin-bottom:0">
-    <div><label>Dirección</label>
-      <select id="f_direccion" oninput="updateOpPreview();actualizarSugerencia11()"><option value="LARGO" ${o.direccion === 'LARGO' ? 'selected' : ''}>Largo</option><option value="CORTO" ${o.direccion === 'CORTO' ? 'selected' : ''}>Corto</option></select></div>
-    <div><label>Tipo de setup</label>
-      <select id="f_tiposetup"><option value="">—</option>${TIPOS_SETUP.map(t => `<option ${o.tipoSetup === t ? 'selected' : ''}>${t}</option>`).join("")}</select></div>
-  </div>
-  <div class="grid2" style="margin-bottom:0">
+  <div class="r3b">
     <div><label>Entrada</label><input type="number" step="any" inputmode="decimal" min="0" id="f_entrada" value="${o.entrada ?? ''}" oninput="updateOpPreview();updateRiesgo();actualizarSugerencia11()"></div>
     <div><label>Stop inicial</label><input type="number" step="any" inputmode="decimal" min="0" id="f_stop" value="${o.stop ?? ''}" oninput="updateOpPreview();updateRiesgo();actualizarSugerencia11()"></div>
+    <div><label>Contratos</label><select id="f_contratos" onchange="onContratosChange()">${opcionesContratos(o.contratos || getContratosDefecto(o.instrumento || DEFAULT_INSTRUMENTO))}</select></div>
   </div>
-  <label>Contratos</label>
-  <select id="f_contratos" onchange="onContratosChange()">${opcionesContratos(o.contratos || getContratosDefecto(o.instrumento || DEFAULT_INSTRUMENTO))}</select>
-  <div class="card tight" id="f_riesgo" style="margin:12px 0 0"></div>
+  <div id="f_riesgo"></div>
   ${salidasFormHtml(o)}
-  <div class="card tight" id="f_preview" style="margin:12px 0 4px"></div>
-  <label>Errores cometidos (toca para marcar)</label>
-  <div class="chip-row" id="f_errores" style="justify-content:flex-start">
+  <div id="f_preview"></div>
+  <label>Errores cometidos</label>
+  <div class="chip-row" id="f_errores" style="justify-content:flex-start;margin-bottom:0">
     ${etiquetasLista.map(e => `<button type="button" class="chip ${etiquetasOp.includes(e) ? 'active err' : ''}" data-err="${esc(e)}" onclick="this.classList.toggle('active');this.classList.toggle('err')">${esc(e)}</button>`).join("")}
   </div>
-  <label>Setup / confluencias</label>
-  <textarea id="f_setup" rows="2" placeholder="Ej: Spring LPS H1, OB M15 en discount, No Supply M5, sweep SSL + MSS, CRT Fase 2">${esc(o.setup || '')}</textarea>
-  <label>Gestión de la operación</label>
-  <textarea id="f_gestion" rows="2" placeholder="Ej: Orden 1 cerrada en 1:1, Orden 2 trailing cerrada en +2.3R">${esc(o.gestion || '')}</textarea>
+  <div class="r2">
+    <div><label>Setup / confluencias</label><textarea id="f_setup" rows="2" placeholder="Spring LPS H1, OB M15…">${esc(o.setup || '')}</textarea></div>
+    <div><label>Gestión</label><textarea id="f_gestion" rows="2" placeholder="Stop a BE tras el 1:1…">${esc(o.gestion || '')}</textarea></div>
+  </div>
   <label>Notas / análisis conductual</label>
-  <textarea id="f_notas" rows="3" placeholder="¿Seguiste el plan? Errores, aciertos, estado emocional...">${esc(o.notas || '')}</textarea>
-  <label>Captura (enlace a imagen, opcional)</label>
+  <textarea id="f_notas" rows="2" placeholder="¿Seguiste el plan? Estado emocional…">${esc(o.notas || '')}</textarea>
+  <label>Captura (enlace, opcional)</label>
   <input id="f_captura" value="${esc(o.capturaURL || '')}" placeholder="https://...">
-  <button class="btn btn-primary" style="margin-top:16px" onclick="submitOpForm('${id || ''}')">${isEdit ? 'Guardar cambios' : 'Guardar operación'}</button>`;
+  <button class="btn btn-primary" style="margin-top:14px" onclick="submitOpForm('${id || ''}')">${isEdit ? 'Guardar cambios' : 'Guardar operación'}</button>
+  </div>`;
   openModal(html);
   onContratosChange();
   formIni = JSON.stringify(leerPreciosForm()); // para saber, al guardar, si cambiaron los precios
@@ -1901,7 +2033,7 @@ function updateRiesgo() {
   const modo = document.getElementById("f_modo").value;
   const contratos = parseInt(document.getElementById("f_contratos").value, 10) || 1;
   if (isNaN(entrada) || isNaN(stop) || entrada === stop) {
-    el.innerHTML = `<p class="small" style="margin:0">Pon entrada y stop para ver el riesgo en € y los contratos recomendados.</p>`;
+    el.innerHTML = `<div class="rk empty">Pon entrada y stop inicial para ver tu riesgo y los contratos recomendados.</div>`;
     return;
   }
   const vp = getValorPunto(instr);
@@ -1913,16 +2045,20 @@ function updateRiesgo() {
   const recom = Math.floor((saldo * obj / 100) / (dist * vp));
   const maxContr = Math.floor((saldo * max / 100) / (dist * vp));
   const tono = max && pct > max ? "neg" : obj && pct > obj ? "warn" : "pos";
-  const fmtPct = (x) => x.toLocaleString("es-ES", { maximumFractionDigits: 2 }) + " %";
+  const n2 = (x) => x.toLocaleString("es-ES", { maximumFractionDigits: 2 });
+  const msgs = [];
+  if (max && pct > max) msgs.push(`<span class="neg">⛔ Superas tu máximo del ${n2(max)} %.</span>`);
+  if (recom < 1) msgs.push(`<span class="warn">Con este stop ni 1 contrato cabe en tu ${n2(obj)} % (${fmtEUR(saldo * obj / 100)}).</span>`);
+  if (dist / entrada < 0.0005) msgs.push(`<span class="warn">⚠️ Stop muy ajustado: ¿supera el spread?</span>`);
   el.innerHTML = `
-    <div class="kv"><div class="k">Distancia al stop</div><div>${dist.toLocaleString("es-ES", { maximumFractionDigits: 2 })} pts · ${fmtEUR(vp)}/pt</div></div>
-    <div class="kv"><div class="k">Riesgo con ${contratos} contrato${contratos === 1 ? '' : 's'}</div><div class="${tono}" style="font-weight:800">${fmtEUR(riesgo)} · ${fmtPct(pct)}</div></div>
-    ${recom >= 1
-      ? `<div class="kv"><div class="k">Para arriesgar el ${fmtPct(obj)}</div><div><b>${recom} contrato${recom === 1 ? '' : 's'}</b> <button type="button" class="btn btn-ghost btn-sm" style="margin-left:6px" onclick="aplicarContratos(${recom})">Aplicar</button></div></div>
-         <div class="kv"><div class="k">Máximo (${fmtPct(max)})</div><div>${maxContr} contrato${maxContr === 1 ? '' : 's'}</div></div>`
-      : `<p class="small warn" style="margin:6px 0 0">Con este stop ni 1 contrato cabe en tu ${fmtPct(obj)} (${fmtEUR(saldo * obj / 100)}). Busca un stop más cercano o no operes.</p>`}
-    ${max && pct > max ? `<div class="aviso aviso-red" style="margin:8px 0 0">⛔ Superas tu riesgo máximo por operación (${fmtPct(max)}).</div>` : ""}
-    ${dist / entrada < 0.0005 ? `<p class="small warn" style="margin:6px 0 0">⚠️ Stop muy ajustado (${(dist / entrada * 100).toFixed(3)} % del precio): comprueba que supera el spread del mercado o el ruido te sacará.</p>` : ""}`;
+  <div class="rk">
+    <div class="row3">
+      <div><div class="mini">Riesgo · ${contratos} contr.</div><div class="v ${tono}">${fmtEUR(riesgo)}</div><div class="mini" style="text-transform:none;letter-spacing:0" ><span class="${tono}">${n2(pct)} %</span> del saldo</div></div>
+      <div><div class="mini">Al stop</div><div class="v">${n2(dist)} pts</div><div class="mini" style="text-transform:none;letter-spacing:0">${fmtEUR(vp)}/pt</div></div>
+      <div><div class="mini">Al ${n2(obj)} %</div><div class="v">${recom >= 1 ? recom + " contr." : "—"}${recom >= 1 && recom !== contratos ? `<button type="button" class="ap" onclick="aplicarContratos(${recom})">Usar</button>` : ""}</div><div class="mini" style="text-transform:none;letter-spacing:0">máx. ${maxContr} al ${n2(max)} %</div></div>
+    </div>
+    ${msgs.length ? `<div class="msg">${msgs.join(" ")}</div>` : ""}
+  </div>`;
 }
 // En una operación NUEVA, al cambiar de mercado se ponen sus contratos por
 // defecto (Más → Contratos por defecto). Al editar no se toca nada.
@@ -1959,16 +2095,15 @@ function salidasFormHtml(o) {
   const [s1, s2] = salidasIniciales(o);
   const v = (x) => (x == null ? "" : x);
   return `
-  <div class="chk-row" style="border:none;padding:12px 0 0">
-    <input type="checkbox" id="f_enstop" ${o.salioEnStop ? "checked" : ""} onchange="onContratosChange()">
-    <div class="txt">Salió entera en el stop inicial</div>
+  <div class="sect">
+    <span class="t">Salidas</span>
+    <label class="sw" style="margin:0;text-transform:none;letter-spacing:0;font-size:11.5px"><input type="checkbox" id="f_enstop" ${o.salioEnStop ? "checked" : ""} onchange="onContratosChange()">Salió entera en el stop</label>
   </div>
   <div id="f_bloque_salidas">
-    <div class="grid2" style="margin-bottom:0">
-      <div><label id="f_lbl_s1">Salida 1 · 1:1</label><input type="number" step="any" inputmode="decimal" min="0" id="f_salida_1" value="${v(s1)}" oninput="updateOpPreview()"></div>
-      <div id="f_col_s2"><label id="f_lbl_s2">Salida 2 · confluencia</label><input type="number" step="any" inputmode="decimal" min="0" id="f_salida_2" value="${v(s2)}" oninput="updateOpPreview()"></div>
+    <div class="r2">
+      <div><label class="lrow"><span id="f_lbl_s1">1:1</span><a href="#" id="f_sugerencia" onclick="usar11();return false;"></a></label><input type="number" step="any" inputmode="decimal" min="0" id="f_salida_1" value="${v(s1)}" oninput="updateOpPreview()"></div>
+      <div id="f_col_s2"><label id="f_lbl_s2">Confluencia</label><input type="number" step="any" inputmode="decimal" min="0" id="f_salida_2" value="${v(s2)}" oninput="updateOpPreview()"></div>
     </div>
-    <div id="f_sugerencia" class="small" style="margin-top:6px"></div>
   </div>`;
 }
 function onContratosChange() {
@@ -1978,8 +2113,8 @@ function onContratosChange() {
   const enStop = document.getElementById("f_enstop").checked;
   document.getElementById("f_bloque_salidas").style.display = enStop ? "none" : "";
   document.getElementById("f_col_s2").style.display = c2 ? "" : "none";
-  document.getElementById("f_lbl_s1").textContent = c2 ? `Salida 1 · 1:1 (${c1} contr.)` : "Salida";
-  document.getElementById("f_lbl_s2").textContent = `Salida 2 · confluencia (${c2} contr.)`;
+  document.getElementById("f_lbl_s1").textContent = c2 ? `1:1 · ${c1} contr.` : "Salida";
+  document.getElementById("f_lbl_s2").textContent = `Confluencia · ${c2} contr.`;
   actualizarSugerencia11();
   updateOpPreview();
   updateRiesgo();
@@ -1996,8 +2131,13 @@ function actualizarSugerencia11() {
   const el = document.getElementById("f_sugerencia");
   if (!el) return;
   const p = precio11();
-  el.innerHTML = p == null ? "Pon entrada y stop inicial para ver el precio del 1:1."
-    : `1:1 en <b>${p.toLocaleString("es-ES", { maximumFractionDigits: 2 })}</b> <button type="button" class="btn btn-ghost btn-sm" style="margin-left:6px;padding:4px 10px" onclick="document.getElementById('f_salida_1').value=precio11();updateOpPreview()">Usar</button>`;
+  el.textContent = p == null ? "" : "usar " + p.toLocaleString("es-ES", { maximumFractionDigits: 2 });
+}
+function usar11() {
+  const p = precio11();
+  if (p == null) return;
+  document.getElementById("f_salida_1").value = p;
+  updateOpPreview();
 }
 // Lee del formulario las salidas con sus contratos: [{ salida, contratos }].
 function leerOrdenesForm() {
@@ -2030,19 +2170,21 @@ function updateOpPreview() {
   if (!el) return;
   const r = readOpFormResultado();
   if (r.puntos === null) {
-    el.innerHTML = `<p class="small" style="margin:0">${document.getElementById("f_enstop").checked ? "Pon entrada y stop inicial" : "Rellena la entrada y las salidas"} para ver los puntos, el R y el resultado en € calculados solos.</p>`;
+    el.innerHTML = `<div class="rk empty">${document.getElementById("f_enstop").checked ? "Pon entrada y stop inicial" : "Rellena la entrada y las salidas"} para ver el resultado.</div>`;
     return;
   }
   const neto = r.resultadoEUR - (r.comision || 0);
   const tipo = resultadoTipo({ resultadoEUR: r.resultadoEUR, comision: r.comision });
+  const n2 = (x) => x.toLocaleString("es-ES", { maximumFractionDigits: 2 });
   el.innerHTML = `
-    <div class="kv"><div class="k">Puntos</div><div class="${r.puntos > 0 ? 'pos' : r.puntos < 0 ? 'neg' : ''}" style="font-weight:700">${(r.puntos > 0 ? "+" : "") + r.puntos.toFixed(2)} pts</div></div>
-    <div class="kv"><div class="k">Resultado (R)</div><div>${r.resultadoR === null ? '— (pon el stop)' : fmtR(r.resultadoR)}</div></div>
-    <div class="kv"><div class="k">Resultado bruto</div><div>${fmtEUR(r.resultadoEUR, true)}</div></div>
-    ${r.comision ? `<div class="kv"><div class="k">Comisión</div><div class="neg">-${fmtEUR(r.comision)}</div></div>` : ""}
-    <div class="kv"><div class="k">Resultado neto</div><div class="${toneTipo(tipo)}" style="font-weight:800">${fmtEUR(neto, true)}${tipo === 'be' ? ' · BE' : ''}</div></div>`;
+  <div class="rk">
+    <div class="row3">
+      <div><div class="mini">Resultado neto</div><div class="v ${toneTipo(tipo)}">${fmtEUR(neto, true)}${tipo === 'be' ? ' · BE' : ''}</div><div class="mini" style="text-transform:none;letter-spacing:0">${r.comision ? `bruto ${fmtEUR(r.resultadoEUR, true)}` : "sin comisión"}</div></div>
+      <div><div class="mini">Puntos</div><div class="v ${r.puntos > 0 ? 'pos' : r.puntos < 0 ? 'neg' : ''}">${(r.puntos > 0 ? "+" : "") + n2(r.puntos)}</div><div class="mini" style="text-transform:none;letter-spacing:0">media ponderada</div></div>
+      <div><div class="mini">Resultado R</div><div class="v">${r.resultadoR === null ? '—' : fmtR(r.resultadoR)}</div><div class="mini" style="text-transform:none;letter-spacing:0">${r.resultadoR === null ? 'pon el stop' : 'sobre stop inicial'}</div></div>
+    </div>
+  </div>`;
 }
-
 // Al editar, los resultados (puntos, R, €, comisión) solo se recalculan si
 // cambian los datos de precio: entrada, stop, salidas, contratos, mercado,
 // dirección o la casilla "salió en el stop". Si solo cambias notas, setup, fecha… se conservan tal cual.
@@ -2337,7 +2479,7 @@ function renderReferencia() {
   return `
   <div class="searchbar">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-    <input placeholder="Buscar en el manual (ej. LPS, FVG, Spring…)" value="${esc(state.refSearch || '')}" oninput="state.refSearch=this.value;refreshRefList()">
+    <input placeholder="Buscar en el manual" value="${esc(state.refSearch || '')}" oninput="state.refSearch=this.value;refreshRefList()">
   </div>
   <div class="card tight" id="refList">${refListHtml()}</div>
   <p class="small center">Manual Definitivo de Trading (13/09/2026) · Basado en la metodología de Jordi Martí — jorditrading.com</p>`;
@@ -2387,10 +2529,10 @@ function renderMas() {
   <div class="card">
     <h3>Contratos por defecto por mercado</h3>
     <div class="grid2">
-      ${Object.keys(INSTRUMENTOS).map(k => `<div><label>${INSTRUMENTOS[k].nombre}</label><input type="number" step="1" inputmode="numeric" min="1" id="cd_${k}" value="${getContratosDefecto(k)}"></div>`).join("")}
+      ${Object.keys(INSTRUMENTOS).map(k => `<div><label>${INSTRUMENTOS[k].nombre}</label><input type="number" step="1" inputmode="numeric" min="1" id="cd_${k}" value="${getContratosDefecto(k)}" oninput="document.getElementById('cdr_${k}').textContent=textoReparto(this.value)"><div class="small" id="cdr_${k}" style="margin-top:4px">${textoReparto(getContratosDefecto(k))}</div></div>`).join("")}
     </div>
     <button class="btn btn-primary" onclick="saveContratosDefecto()">Guardar contratos por defecto</button>
-    <p class="small" style="margin-top:10px">Con los que se abre una operación nueva en cada mercado. Por defecto, equivalentes a 2 contratos de Nasdaq (todos a 1 €/punto): Oro 14, S&amp;P 9, Dow 1. El recuadro de riesgo te dirá igualmente si para el stop de ese día conviene otra cifra.</p>
+    <p class="small" style="margin-top:10px">Con los que se abre una operación nueva en cada mercado, repartidos entre tus dos salidas: mitad al 1:1 y mitad a confluencia; si son impares, el contrato extra va al 1:1. Con 1 contrato hay una sola salida. Por defecto, equivalentes a 2 contratos de Nasdaq (todos a 1 €/punto): Oro 14, S&amp;P 9, Dow 1. El recuadro de riesgo te dirá igualmente si para el stop de ese día conviene otra cifra.</p>
   </div>
 
   <div class="card">
@@ -2480,6 +2622,11 @@ function saveRiesgo() {
     riesgoObjetivoPct: Math.max(0, leerNum("aj_robj", 0.5)),
     riesgoMaxPct: Math.max(0, leerNum("aj_rmax", 1)),
   }, "Límites guardados");
+}
+function textoReparto(v) {
+  const n = Math.max(1, Math.round(parseFloat(v)) || 1);
+  const [c1, c2] = repartoContratos(n);
+  return c2 ? `→ ${c1} al 1:1 · ${c2} a confluencia` : "→ 1 sola salida";
 }
 function saveContratosDefecto() {
   const contratosDefecto = {};
