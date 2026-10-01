@@ -298,7 +298,8 @@ label{text-align:center;}
 /* Gráfica (solo en Okartap) */
 #okcDash .okc-head,#okcStats .okc-head{flex-direction:column;justify-content:center;}
 #okcDash .okc-title,#okcStats .okc-title{text-align:center;}
-#okcDash .okc-legend,#okcStats .okc-legend{justify-content:center;}
+#okcDash .okc-legend,#okcStats .okc-legend{align-items:center;}
+#okcDash .okc-leg-row,#okcStats .okc-leg-row{justify-content:center;}
 #okcDash .okc-btn,#okcStats .okc-btn{display:block;margin:12px auto 0;}
 #okcDash .okc-tbl th,#okcDash .okc-tbl td,#okcStats .okc-tbl th,#okcStats .okc-tbl td{text-align:center !important;}
 /* Tablas, guía y avisos */
@@ -1051,7 +1052,10 @@ const GLOSARIO = [
     ".okc-tip .row b{font-weight:700;color:#e8eef8;white-space:nowrap}" +
     ".okc-key{display:inline-block;width:12px;height:2px;border-radius:1px}" +
     ".okc-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:11px;color:#7a8db0;font-weight:600}" +
-    ".okc-legend span{display:flex;align-items:center;gap:5px}" +
+    ".okc-legend{flex-direction:column;gap:6px}" +
+    ".okc-leg-row{display:flex;flex-wrap:wrap;gap:6px 14px}" +
+    ".okc-legend span{display:flex;align-items:center;gap:5px;white-space:nowrap}" +
+    ".okc-lv{color:#e8eef8;font-weight:700;margin-left:2px}" +
     ".okc-btn{background:none;border:1px solid #253050;color:#7a8db0;font:inherit;font-weight:700;font-size:11px;letter-spacing:1px;border-radius:8px;padding:6px 10px;margin-top:12px;cursor:pointer;text-transform:uppercase}" +
     ".okc-tbl{max-height:260px;overflow:auto;display:none}" +
     ".okc-tbl table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}" +
@@ -1108,19 +1112,24 @@ const GLOSARIO = [
     var kpis = div("okc-kpis"); root.appendChild(kpis);
     function kpi() { var k = div("okc-kpi"); var v = div("v", "—"), l = div("l", ""); k.appendChild(v); k.appendChild(l); kpis.appendChild(k); return { v: v, l: l }; }
     var kSaldo = kpi(), kRes = kpi(), kMax = kpi(), kDD = kpi();
-    kSaldo.l.textContent = "Saldo"; kMax.l.textContent = "Máximo"; kDD.l.textContent = "Desde máximo";
+    kSaldo.l.textContent = "Saldo actual"; kMax.l.textContent = "Máximo"; kDD.l.textContent = "Desde máximo";
     var chart = div("okc-chart"); root.appendChild(chart);
     var svg = el("svg", { role: "img", "aria-label": "Evolución del saldo y resultado neto por día" }, chart);
     var tip = div("okc-tip"); chart.appendChild(tip);
     var leg = div("okc-legend"); root.appendChild(leg);
+    // Leyenda en dos filas: 1) qué es cada marca; 2) máximo histórico y caída
+    // desde el máximo CON SUS CIFRAS (lo que falta para volver al máximo).
     leg.innerHTML =
+      '<div class="okc-leg-row">' +
       '<span><i class="okc-key" style="background:#c8d4e8"></i>Saldo</span>' +
       '<span><i class="okc-key" style="background:none;border-top:2px dashed #55628a;height:0"></i>Capital inicial</span>' +
       '<span><svg width="10" height="10"><path d="M5 1 L9 9 L1 9Z" fill="#4caf82"/></svg>Ganada</span>' +
       '<span><svg width="10" height="10"><path d="M5 9 L9 1 L1 1Z" fill="#e05555"/></svg>Perdida</span>' +
       '<span><svg width="10" height="10"><circle cx="5" cy="5" r="3.5" fill="#8a97b8"/></svg>BE</span>' +
-      '<span><i class="okc-key" style="background:rgba(224,85,85,.35);height:9px"></i>Caída desde máximo</span>' +
-      '<span><svg width="12" height="12"><path d="M6 1l1.5 3.2 3.5.4-2.6 2.4.7 3.5L6 8.8 2.9 10.5l.7-3.5L1 4.6l3.5-.4z" fill="#c9a84c"/></svg>Máximo histórico</span>';
+      '</div><div class="okc-leg-row okc-leg-vals">' +
+      '<span><svg width="12" height="12"><path d="M6 1l1.5 3.2 3.5.4-2.6 2.4.7 3.5L6 8.8 2.9 10.5l.7-3.5L1 4.6l3.5-.4z" fill="#c9a84c"/></svg>Máximo histórico <b class="okc-lv" data-k="max">—</b></span>' +
+      '<span><i class="okc-key" style="background:rgba(224,85,85,.35);height:9px"></i>Caída desde máximo <b class="okc-lv" data-k="dd">—</b></span>' +
+      '</div>';
     var btn = document.createElement("button"); btn.type = "button"; btn.className = "okc-btn"; btn.textContent = "Ver tabla por días"; root.appendChild(btn);
     var tblw = div("okc-tbl"); root.appendChild(tblw);
     btn.onclick = function () { var v = tblw.style.display === "block"; tblw.style.display = v ? "none" : "block"; btn.textContent = v ? "Ver tabla por días" : "Ocultar tabla"; };
@@ -1139,9 +1148,19 @@ const GLOSARIO = [
       var resP = saldoFin - saldoIni, dd = saldo - maxH;
       kSaldo.v.textContent = fE0(saldo);
       kRes.v.textContent = fE0(resP, true); kRes.v.className = "v " + (resP >= 0 ? "pos" : "neg");
-      kRes.l.textContent = (resP >= 0 ? "+" : "") + (saldoIni ? (resP / saldoIni * 100).toFixed(1) : "0.0") + "% periodo";
+      // Se indica el periodo y el saldo con el que EMPEZÓ, para que cuadre:
+      // saldo al inicio del periodo + ganado en el periodo = saldo actual.
+      var nomPer = cfg.desde ? "periodo" : ({ 7: "1S", 30: "1M", 90: "3M", 0: "todo" })[periodo] || "periodo";
+      kRes.l.innerHTML = "";
+      kRes.l.appendChild(document.createTextNode((resP >= 0 ? "Ganado " : "Perdido ") + nomPer));
+      kRes.l.appendChild(document.createElement("br"));
+      kRes.l.appendChild(document.createTextNode("desde " + fE0(saldoIni)));
       kMax.v.textContent = fE0(maxH);
       kDD.v.textContent = dd < -0.5 ? fE0(dd) : "En máximos"; kDD.v.className = "v " + (dd < -0.5 ? "neg" : "pos");
+      var lvMax = leg.querySelector('[data-k="max"]'), lvDD = leg.querySelector('[data-k="dd"]');
+      lvMax.textContent = fE(maxH);
+      lvDD.textContent = dd < -0.005 ? fE(dd) : "0,00 € · en máximos";
+      lvDD.className = "okc-lv " + (dd < -0.005 ? "neg" : "pos");
 
       while (svg.firstChild) svg.removeChild(svg.firstChild);
       tip.className = "okc-tip"; tblw.innerHTML = "";
@@ -1708,9 +1727,15 @@ function toast(msg) {
 }
 function fmtR(r) {
   if (r === undefined || r === null || isNaN(r)) return "—";
-  return (r > 0 ? "+" : "") + r.toFixed(2) + "R";
+  return (r > 0 ? "+" : "") + fmtN(r, 2, 2) + "R";
 }
 const EUR_FMT = new Intl.NumberFormat("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: "always" });
+// Formato español para cualquier número: punto de miles SIEMPRE (también con
+// 4 cifras: 1.000) y coma decimal. dec = decimales máximos, min = mínimos.
+function fmtN(x, dec = 2, min = 0) {
+  if (typeof x !== "number" || isNaN(x)) return "—";
+  return x.toLocaleString("es-ES", { minimumFractionDigits: min, maximumFractionDigits: dec, useGrouping: "always" });
+}
 function fmtEUR(n, signed) {
   if (n === undefined || n === null || isNaN(n)) return "—";
   return (signed && n > 0 ? "+" : "") + EUR_FMT.format(n) + " €";
@@ -1759,7 +1784,7 @@ function renderDashboard() {
   const racha = computeStreak(ops);
   const last5 = state.ops.filter(o => (o.modo || "demo") === state.modo).slice(0, 5);
   const cls = (x) => x == null ? "" : x >= 0 ? "pos" : "neg";
-  const pf = m.profitFactor === Infinity ? "∞" : m.profitFactor == null ? "—" : m.profitFactor.toFixed(2);
+  const pf = m.profitFactor === Infinity ? "∞" : m.profitFactor == null ? "—" : fmtN(m.profitFactor, 2, 2);
   return `
   ${modoToggleHtml()}
   ${riesgoHoyCardHtml()}
@@ -1805,7 +1830,7 @@ function opContratosDetalle(o) {
   const contratos = o.contratos || 1;
   const etiqueta = `${contratos} contrato${contratos === 1 ? '' : 's'}`;
   if (typeof o.puntos !== "number") return etiqueta;
-  const fmtPts = (p) => (p > 0 ? '+' : '') + p.toFixed(1);
+  const fmtPts = (p) => (p > 0 ? '+' : '') + fmtN(p, 2);
   const puntosTxt = Array.isArray(o.puntosPorSalida) && o.puntosPorSalida.length > 1
     ? o.puntosPorSalida.map(fmtPts).join(' / ') + ' pts'
     : fmtPts(o.puntos) + ' pts';
@@ -1905,7 +1930,7 @@ function openOpDetail(id) {
   const t = resultadoTipo(o);
   const neto = netEUR(o);
   const etiquetaTipo = { win: "Ganada", loss: "Perdida", be: "Break Even", nd: "Sin resultado" }[t] || "";
-  const num = (x) => (typeof x === "number" ? x.toLocaleString("es-ES", { maximumFractionDigits: 2 }) : "—");
+  const num = (x) => fmtN(x, 2);
   const tile = (l, v, sub, cls, w) => `<div class="tl ${w || ''}"><div class="mini">${l}</div><div class="v ${cls || ''}">${v}</div>${sub ? `<div class="s">${sub}</div>` : ""}</div>`;
   const txt = (l, v) => v ? `<div class="txtb"><div class="mini">${l}</div><div class="tx">${esc(v)}</div></div>` : "";
   const badges = `<div class="det-badges">
@@ -2045,7 +2070,7 @@ function updateRiesgo() {
   const recom = Math.floor((saldo * obj / 100) / (dist * vp));
   const maxContr = Math.floor((saldo * max / 100) / (dist * vp));
   const tono = max && pct > max ? "neg" : obj && pct > obj ? "warn" : "pos";
-  const n2 = (x) => x.toLocaleString("es-ES", { maximumFractionDigits: 2 });
+  const n2 = (x) => fmtN(x, 2);
   const msgs = [];
   if (max && pct > max) msgs.push(`<span class="neg">⛔ Superas tu máximo del ${n2(max)} %.</span>`);
   if (recom < 1) msgs.push(`<span class="warn">Con este stop ni 1 contrato cabe en tu ${n2(obj)} % (${fmtEUR(saldo * obj / 100)}).</span>`);
@@ -2131,7 +2156,7 @@ function actualizarSugerencia11() {
   const el = document.getElementById("f_sugerencia");
   if (!el) return;
   const p = precio11();
-  el.textContent = p == null ? "" : "usar " + p.toLocaleString("es-ES", { maximumFractionDigits: 2 });
+  el.textContent = p == null ? "" : "usar " + fmtN(p, 2);
 }
 function usar11() {
   const p = precio11();
@@ -2175,7 +2200,7 @@ function updateOpPreview() {
   }
   const neto = r.resultadoEUR - (r.comision || 0);
   const tipo = resultadoTipo({ resultadoEUR: r.resultadoEUR, comision: r.comision });
-  const n2 = (x) => x.toLocaleString("es-ES", { maximumFractionDigits: 2 });
+  const n2 = (x) => fmtN(x, 2);
   el.innerHTML = `
   <div class="rk">
     <div class="row3">
@@ -2293,7 +2318,7 @@ function renderStats() {
     return modoToggleHtml() + periodoChips + `<div class="card">${emptyState("Sin operaciones en este periodo", `Registra operaciones en modo ${state.modo === 'demo' ? 'Demo' : 'Real'} o cambia el periodo.`)}</div>` + revisionSemanalHtml();
   }
   const m = calcMetricas(ops);
-  const pf = m.profitFactor === Infinity ? "∞" : m.profitFactor == null ? "—" : m.profitFactor.toFixed(2);
+  const pf = m.profitFactor === Infinity ? "∞" : m.profitFactor == null ? "—" : fmtN(m.profitFactor, 2, 2);
   const conErrores = ops.filter(o => Array.isArray(o.errores) && o.errores.length);
   const porError = agrupar(ops, o => (Array.isArray(o.errores) && o.errores.length ? o.errores : ["Sin errores"]));
   const porSetup = agrupar(ops, o => o.tipoSetup || "Sin clasificar");
@@ -2566,7 +2591,7 @@ function renderMas() {
       <div><label>Capital (€)</label><input type="number" inputmode="decimal" min="0" id="c_capital" value="${Math.round(saldo * 100) / 100}"></div>
       <div><label>Riesgo por operación (%)</label><input type="number" inputmode="decimal" min="0" step="any" id="c_riesgo" value="${ajustes.riesgoObjetivoPct}"></div>
     </div>
-    <p class="small" style="margin:4px 0 0">Capital = saldo actual en modo ${state.modo === 'demo' ? 'Demo' : 'Real'}. Tu objetivo: ${ajustes.riesgoObjetivoPct} % · máximo ${ajustes.riesgoMaxPct} %.</p>
+    <p class="small" style="margin:4px 0 0">Capital = saldo actual en modo ${state.modo === 'demo' ? 'Demo' : 'Real'}. Tu objetivo: ${fmtN(ajustes.riesgoObjetivoPct, 2)} % · máximo ${fmtN(ajustes.riesgoMaxPct, 2)} %.</p>
     <label>Mercado</label>
     <select id="c_instr" onchange="document.getElementById('c_valorpunto').value=getValorPunto(this.value)">${Object.keys(INSTRUMENTOS).map(k => `<option value="${k}" ${k === DEFAULT_INSTRUMENTO ? 'selected' : ''}>${INSTRUMENTOS[k].nombre}</option>`).join("")}</select>
     <div class="grid3" style="margin-bottom:0">
@@ -2662,9 +2687,9 @@ function calcPosicion() {
   const contratos = riesgoEUR / (distancia * valorPunto);
   const enteros = Math.floor(contratos);
   out.innerHTML = `
-    <div class="kv"><div class="k">Distancia al stop</div><div>${distancia.toFixed(2)} pts</div></div>
+    <div class="kv"><div class="k">Distancia al stop</div><div>${fmtN(distancia, 2)} pts</div></div>
     <div class="kv"><div class="k">Riesgo máximo</div><div>${fmtEUR(riesgoEUR)}</div></div>
-    <div class="kv"><div class="k">Tamaño exacto</div><div>${contratos.toFixed(2)} contratos</div></div>
+    <div class="kv"><div class="k">Tamaño exacto</div><div>${fmtN(contratos, 2, 2)} contratos</div></div>
     <div class="kv"><div class="k">A operar (redondeo a la baja)</div><div style="font-weight:800">${enteros} contrato${enteros === 1 ? '' : 's'} · riesgo real ${fmtEUR(enteros * distancia * valorPunto)}</div></div>
     ${enteros === 0 ? `<p class="small warn">Con este stop, ni 1 contrato cabe en tu riesgo. Busca un stop más ajustado o un contrato más pequeño.</p>` : ""}`;
 }
@@ -2678,7 +2703,7 @@ function calcRB() {
   const ratio = Math.abs(t - e) / Math.abs(e - s);
   const ok = ratio >= 2;
   out.innerHTML = `
-    <div class="kv"><div class="k">Ratio riesgo:beneficio</div><div style="font-weight:800" class="${ok ? 'pos' : 'neg'}">1 : ${ratio.toFixed(2)}</div></div>
+    <div class="kv"><div class="k">Ratio riesgo:beneficio</div><div style="font-weight:800" class="${ok ? 'pos' : 'neg'}">1 : ${fmtN(ratio, 2, 2)}</div></div>
     <div class="kv"><div class="k">Cumple mínimo 1:2</div><div class="${ok ? 'pos' : 'neg'}">${ok ? 'Sí' : 'No'}</div></div>`;
 }
 
