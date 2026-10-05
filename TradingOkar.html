@@ -18,7 +18,7 @@
 <style>
 :root{
   --bg:#0e1520; --bg2:#161f38; --card:#1a2440; --card2:#202d50;
-  --border:#253050; --text:#e8eef8; --muted:#7a8db0; --muted2:#55628a;
+  --border:#253050; --text:#e8eef8; --muted:#a6b5d1; --muted2:#8392b5;
   --silver:#c8d4e8; --accent:#5b8dee; --accent2:#7fa4f2;
   --gold:#c9a84c;
   --green:#4caf82; --red:#e05555; --amber:#e09c3a;
@@ -261,6 +261,17 @@ tr:last-child td{border-bottom:none;}
 .txtb .tx{font-size:13.5px;color:var(--text);line-height:1.45;margin-top:3px;white-space:pre-wrap;}
 .det-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px;}
 canvas{width:100%;display:block;}
+/* Recorrido máximo (MFE) */
+.mfe-b{border-top:1px solid var(--border);padding-top:12px;margin-top:10px;}
+.mfe-b:first-of-type{border-top:none;margin-top:0;padding-top:4px;}
+.mfe-t{font-weight:800;color:var(--silver);letter-spacing:.6px;margin-bottom:8px;text-align:center;}
+.mfe-niv{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:6px 0 10px;align-items:end;}
+.mfe-niv div{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.mfe-niv b{font-size:11px;color:var(--muted);}
+.mfe-niv span{font-size:15px;font-weight:800;}
+.mfe-niv i{display:block;width:70%;background:rgba(76,175,130,.55);border-radius:3px 3px 0 0;}
+.mfe-opt{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;text-align:center;}
+.mfe-opt .v{font-size:18px;font-weight:800;margin:2px 0;}
 /* ===== TODO CENTRADO (petición de Patry, 01/10/2026) ===== */
 .card,.card p,.card h3,.card h4,.stat,.kpi,.empty{text-align:center;}
 h1,h2,h3,h4{text-align:center;}
@@ -382,12 +393,13 @@ th,td{text-align:center !important;}
 
 // ---------- Mercados ----------
 // El valor por punto y la comisión reales de cada uno se configuran en Más.
+// El orden de aquí es el de los desplegables, filtros y ajustes (pedido por Patry).
 const INSTRUMENTOS = {
   NASDAQ: { nombre: "Nasdaq 100", corto: "Nasdaq" },
-  DAX: { nombre: "DAX 40", corto: "DAX" },
-  SP500: { nombre: "S&P 500", corto: "S&P 500" },
   ORO: { nombre: "Oro (XAUUSD)", corto: "Oro" },
+  SP500: { nombre: "S&P 500", corto: "S&P 500" },
   DOWJONES: { nombre: "Dow Jones", corto: "Dow Jones" },
+  DAX: { nombre: "DAX 40", corto: "DAX" },
 };
 const DEFAULT_INSTRUMENTO = "NASDAQ";
 
@@ -1031,38 +1043,38 @@ const GLOSARIO = [
 (function () {
   var CSS = ".okc{position:relative}" +
     ".okc-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}" +
-    ".okc-title{margin:0;font-size:10.5px;color:#7a8db0;text-transform:uppercase;letter-spacing:2.2px;font-weight:700}" +
+    ".okc-title{margin:0;font-size:10.5px;color:#a6b5d1;text-transform:uppercase;letter-spacing:2.2px;font-weight:700}" +
     ".okc-seg{display:flex;background:#161f38;border:1px solid #253050;border-radius:10px;padding:3px;gap:2px}" +
-    ".okc-seg button{background:none;border:0;color:#7a8db0;font:inherit;font-weight:700;font-size:11px;letter-spacing:1px;padding:6px 10px;border-radius:7px;cursor:pointer;text-transform:uppercase}" +
+    ".okc-seg button{background:none;border:0;color:#a6b5d1;font:inherit;font-weight:700;font-size:11px;letter-spacing:1px;padding:6px 10px;border-radius:7px;cursor:pointer;text-transform:uppercase}" +
     ".okc-seg button.on{background:#202d50;color:#c8d4e8}" +
     ".okc-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}" +
     ".okc-kpi{background:#161f38;border:1px solid #253050;border-radius:10px;padding:9px 4px;text-align:center;min-width:0}" +
     ".okc-kpi .v{font-size:clamp(12px,3.4vw,15px);font-weight:700;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8eef8}" +
-    ".okc-kpi .l{font-size:9px;color:#7a8db0;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}" +
+    ".okc-kpi .l{font-size:9px;color:#a6b5d1;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}" +
     ".okc .pos{color:#4caf82!important}.okc .neg{color:#e05555!important}" +
     ".okc-chart{position:relative;touch-action:pan-y;user-select:none;-webkit-user-select:none}" +
     ".okc svg{display:block;width:100%;overflow:visible}" +
-    ".okc text.ax{fill:#7a8db0;font-size:10px;font-weight:600;font-family:inherit}" +
-    ".okc text.sub{fill:#7a8db0;font-size:9.5px;font-weight:700;letter-spacing:1.4px;font-family:inherit}" +
+    ".okc text.ax{fill:#a6b5d1;font-size:10px;font-weight:600;font-family:inherit}" +
+    ".okc text.sub{fill:#a6b5d1;font-size:9.5px;font-weight:700;letter-spacing:1.4px;font-family:inherit}" +
     ".okc-tip{position:absolute;top:6px;pointer-events:none;background:#161f38;border:1px solid #253050;border-radius:10px;padding:8px 10px;font-size:12px;min-width:160px;max-width:240px;box-shadow:0 6px 20px rgba(0,0,0,.45);opacity:0;transition:opacity .1s;z-index:5;color:#e8eef8}" +
     ".okc-tip.show{opacity:1}" +
-    ".okc-tip .d{color:#7a8db0;font-size:10.5px;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;font-weight:700}" +
+    ".okc-tip .d{color:#a6b5d1;font-size:10.5px;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;font-weight:700}" +
     ".okc-tip .row{display:flex;justify-content:space-between;gap:12px;align-items:center;line-height:1.55}" +
-    ".okc-tip .row span{color:#7a8db0;display:flex;align-items:center;gap:6px;white-space:nowrap}" +
+    ".okc-tip .row span{color:#a6b5d1;display:flex;align-items:center;gap:6px;white-space:nowrap}" +
     ".okc-tip .row b{font-weight:700;color:#e8eef8;white-space:nowrap}" +
     ".okc-key{display:inline-block;width:12px;height:2px;border-radius:1px}" +
-    ".okc-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:11px;color:#7a8db0;font-weight:600}" +
+    ".okc-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:11px;color:#a6b5d1;font-weight:600}" +
     ".okc-legend{flex-direction:column;gap:6px}" +
     ".okc-leg-row{display:flex;flex-wrap:wrap;gap:6px 14px}" +
     ".okc-legend span{display:flex;align-items:center;gap:5px;white-space:nowrap}" +
     ".okc-lv{color:#e8eef8;font-weight:700;margin-left:2px}" +
-    ".okc-btn{background:none;border:1px solid #253050;color:#7a8db0;font:inherit;font-weight:700;font-size:11px;letter-spacing:1px;border-radius:8px;padding:6px 10px;margin-top:12px;cursor:pointer;text-transform:uppercase}" +
+    ".okc-btn{background:none;border:1px solid #253050;color:#a6b5d1;font:inherit;font-weight:700;font-size:11px;letter-spacing:1px;border-radius:8px;padding:6px 10px;margin-top:12px;cursor:pointer;text-transform:uppercase}" +
     ".okc-tbl{max-height:260px;overflow:auto;display:none}" +
     ".okc-tbl table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}" +
     ".okc-tbl th,.okc-tbl td{text-align:right;padding:6px 4px;border-bottom:1px solid #253050;color:#e8eef8}" +
     ".okc-tbl th:first-child,.okc-tbl td:first-child{text-align:left}" +
-    ".okc-tbl th{color:#7a8db0;font-size:9.5px;text-transform:uppercase;letter-spacing:1px}" +
-    ".okc-empty{text-align:center;color:#7a8db0;font-size:12px;padding:24px 8px}";
+    ".okc-tbl th{color:#a6b5d1;font-size:9.5px;text-transform:uppercase;letter-spacing:1px}" +
+    ".okc-empty{text-align:center;color:#a6b5d1;font-size:12px;padding:24px 8px}";
   function injectCSS() {
     if (document.getElementById("okc-css")) return;
     var st = document.createElement("style"); st.id = "okc-css"; st.textContent = CSS; document.head.appendChild(st);
@@ -1122,7 +1134,7 @@ const GLOSARIO = [
     leg.innerHTML =
       '<div class="okc-leg-row">' +
       '<span><i class="okc-key" style="background:#c8d4e8"></i>Saldo</span>' +
-      '<span><i class="okc-key" style="background:none;border-top:2px dashed #55628a;height:0"></i>Capital inicial</span>' +
+      '<span><i class="okc-key" style="background:none;border-top:2px dashed #8392b5;height:0"></i>Capital inicial</span>' +
       '<span><svg width="10" height="10"><path d="M5 1 L9 9 L1 9Z" fill="#4caf82"/></svg>Ganada</span>' +
       '<span><svg width="10" height="10"><path d="M5 9 L9 1 L1 1Z" fill="#e05555"/></svg>Perdida</span>' +
       '<span><svg width="10" height="10"><circle cx="5" cy="5" r="3.5" fill="#8a97b8"/></svg>BE</span>' +
@@ -1150,7 +1162,7 @@ const GLOSARIO = [
       kRes.v.textContent = fE0(resP, true); kRes.v.className = "v " + (resP >= 0 ? "pos" : "neg");
       // Se indica el periodo y el saldo con el que EMPEZÓ, para que cuadre:
       // saldo al inicio del periodo + ganado en el periodo = saldo actual.
-      var nomPer = cfg.desde ? "periodo" : ({ 7: "1S", 30: "1M", 90: "3M", 0: "todo" })[periodo] || "periodo";
+      var nomPer = cfg.desde ? "periodo" : ({ 7: "1S", 30: "1M", 90: "3M", 0: "total" })[periodo] || "periodo";
       kRes.l.innerHTML = "";
       kRes.l.appendChild(document.createTextNode((resP >= 0 ? "Ganado " : "Perdido ") + nomPer));
       kRes.l.appendChild(document.createElement("br"));
@@ -1194,7 +1206,7 @@ const GLOSARIO = [
         el("line", { x1: PL, x2: W - PR, y1: Y(v), y2: Y(v), stroke: "#222c4a", "stroke-width": 1 }, svg);
         el("text", { x: W - PR + 6, y: Y(v) + 3.5, "class": "ax" }, svg).textContent = EUR0.format(v);
       }
-      if (capital >= yMin && capital <= yMax) el("line", { x1: PL, x2: W - PR, y1: Y(capital), y2: Y(capital), stroke: "#55628a", "stroke-width": 1.2, "stroke-dasharray": "4 4" }, svg);
+      if (capital >= yMin && capital <= yMax) el("line", { x1: PL, x2: W - PR, y1: Y(capital), y2: Y(capital), stroke: "#8392b5", "stroke-width": 1.2, "stroke-dasharray": "4 4" }, svg);
       // Zona de caída desde el máximo
       el("path", { d: "M" + pts.map(function (p) { return p.x + "," + Y(p.pico); }).join(" L") + " L" + pts.slice().reverse().map(function (p) { return p.x + "," + Y(p.y); }).join(" L") + "Z", fill: "rgba(224,85,85,.22)" }, svg);
       var gid = "okcg" + Math.random().toString(36).slice(2, 8);
@@ -1241,7 +1253,7 @@ const GLOSARIO = [
       }
 
       // Crosshair + recuadro al tocar
-      var cross = el("line", { y1: 0, y2: y0 + H2, stroke: "#7a8db0", "stroke-width": 1, "stroke-dasharray": "2 3", opacity: 0 }, svg);
+      var cross = el("line", { y1: 0, y2: y0 + H2, stroke: "#a6b5d1", "stroke-width": 1, "stroke-dasharray": "2 3", opacity: 0 }, svg);
       var halo = el("circle", { r: 6, fill: "none", stroke: "#c8d4e8", "stroke-width": 2, opacity: 0 }, svg);
       var hit = el("rect", { x: 0, y: 0, width: W, height: H, fill: "transparent" }, svg);
       var activo = -1;
@@ -1332,7 +1344,7 @@ let db, auth, currentUser = null, unsubscribeOps = null, unsubscribeAjustes = nu
 let state = {
   ops: [], tab: "dashboard", modo: "demo",
   diarioFilter: "todas", diarioModo: "todas", diarioSearch: "",
-  periodo: "todo", semanaRev: 0, refSearch: "", periodoGraf: 30,
+  periodo: "todo", semanaRev: 0, refSearch: "", periodoGraf: 0, // la gráfica de Inicio abre siempre en "Todo"
 };
 
 // =====================================================================
@@ -1959,6 +1971,7 @@ function openOpDetail(id) {
       ${tile("Contratos", o.contratos ?? "—")}
       ${detalleSalidasHtml(o, tile, num)}
       ${o.tp1 !== undefined ? tile("TP1", num(o.tp1)) : ""}
+      ${(() => { const m = mfeDe(o); return m ? tile("Máximo a favor", num(o.maxFavor), `dio +${num(m.pts)} pts${m.R != null ? " · " + fmtR(m.R) : ""}${typeof o.puntos === "number" && m.pts > 0 ? " · capturado " + Math.round(Math.max(0, o.puntos) / m.pts * 100) + " %" : ""}`, "", "w3") : ""; })()}
     </div>
     ${Array.isArray(o.errores) && o.errores.length ? `<div class="txtb"><div class="mini">Errores</div><div class="det-badges" style="margin-top:4px">${o.errores.map(e => `<span class="badge short">${esc(e)}</span>`).join("")}</div></div>` : ""}
     ${txt("Setup", o.setup)}${txt("Gestión", o.gestion)}`;
@@ -2129,7 +2142,9 @@ function salidasFormHtml(o) {
       <div><label class="lrow"><span id="f_lbl_s1">1:1</span><a href="#" id="f_sugerencia" onclick="usar11();return false;"></a></label><input type="number" step="any" inputmode="decimal" min="0" id="f_salida_1" value="${v(s1)}" oninput="updateOpPreview()"></div>
       <div id="f_col_s2"><label id="f_lbl_s2">Confluencia</label><input type="number" step="any" inputmode="decimal" min="0" id="f_salida_2" value="${v(s2)}" oninput="updateOpPreview()"></div>
     </div>
-  </div>`;
+  </div>
+  <label>Máximo a favor · precio más lejano que alcanzó</label>
+  <input type="number" step="any" inputmode="decimal" min="0" id="f_maxfavor" value="${v(o.maxFavor)}" placeholder="Opcional: para el análisis de recorrido" oninput="updateOpPreview()">`;
 }
 function onContratosChange() {
   const sel = document.getElementById("f_contratos");
@@ -2190,6 +2205,25 @@ function readOpFormResultado() {
     ordenes: leerOrdenesForm(),
   });
 }
+// ---------- Recorrido máximo a favor (MFE) ----------
+// maxFavor = precio más lejano que alcanzó a favor (hasta donde Patry decida).
+// Puntos que dio = desde la entrada hasta ese precio; R que dio = esos puntos
+// ÷ distancia al stop inicial. Si el precio está en el lado contrario, 0.
+function mfeDe(o) {
+  if (typeof o.maxFavor !== "number" || typeof o.entrada !== "number") return null;
+  const signo = o.direccion === "CORTO" ? -1 : 1;
+  const pts = signo * (o.maxFavor - o.entrada);
+  const dist = typeof o.stop === "number" ? Math.abs(o.entrada - o.stop) : 0;
+  return { pts: Math.max(0, pts), R: dist > 0 ? Math.max(0, pts) / dist : null, malLado: pts < 0 };
+}
+function mfeFormMsg(r) {
+  const g = (id) => { const el = document.getElementById(id); return el && el.value !== "" ? parseFloat(el.value) : undefined; };
+  const m = mfeDe({ maxFavor: g("f_maxfavor"), entrada: g("f_entrada"), stop: g("f_stop"), direccion: document.getElementById("f_direccion").value });
+  if (!m) return "";
+  if (m.malLado) return `<div class="msg warn">⚠️ El máximo a favor está al otro lado de la entrada: revisa el precio.</div>`;
+  const efi = r && typeof r.puntos === "number" && m.pts > 0 ? Math.round(Math.max(0, r.puntos) / m.pts * 100) : null;
+  return `<div class="msg">Dio <b>+${fmtN(m.pts, 2)} pts</b>${m.R != null ? ` · <b>${fmtR(m.R)}</b>` : ""}${efi != null ? ` · capturaste el <b>${efi} %</b>` : ""}</div>`;
+}
 function updateOpPreview() {
   const el = document.getElementById("f_preview");
   if (!el) return;
@@ -2208,6 +2242,7 @@ function updateOpPreview() {
       <div><div class="mini">Puntos</div><div class="v ${r.puntos > 0 ? 'pos' : r.puntos < 0 ? 'neg' : ''}">${(r.puntos > 0 ? "+" : "") + n2(r.puntos)}</div><div class="mini" style="text-transform:none;letter-spacing:0">media ponderada</div></div>
       <div><div class="mini">Resultado R</div><div class="v">${r.resultadoR === null ? '—' : fmtR(r.resultadoR)}</div><div class="mini" style="text-transform:none;letter-spacing:0">${r.resultadoR === null ? 'pon el stop' : 'sobre stop inicial'}</div></div>
     </div>
+    ${mfeFormMsg(r)}
   </div>`;
 }
 // Al editar, los resultados (puntos, R, €, comisión) solo se recalculan si
@@ -2234,6 +2269,7 @@ function submitOpForm(id) {
     contratos: num("f_contratos") || 1,
     errores,
     setup: val("f_setup"), gestion: val("f_gestion"), notas: val("f_notas"), capturaURL: val("f_captura"),
+    maxFavor: num("f_maxfavor"),
   };
   const calc = readOpFormResultado();
   const resultados = {
@@ -2302,6 +2338,65 @@ function tablaGrupos(titulo, grupos, colClave) {
     </table></div>
   </div>`;
 }
+// ---------- Análisis de recorrido máximo (MFE), por mercado ----------
+// Simulación del objetivo de la Salida 2 con la gestión de Patry:
+//  · si el recorrido llegó a 1R → la mitad cierra en +1R y el stop pasa a BE;
+//    la otra mitad gana T R si el recorrido llegó a T, si no sale en BE (0).
+//  · si no llegó a 1R → se considera que tocó el stop: −1R toda la posición.
+function simularObjetivo(rs, T) {
+  if (!rs.length) return null;
+  return rs.reduce((a, r) => a + (r >= 1 ? (1 + (r >= T ? T : 0)) / 2 : -1), 0) / rs.length;
+}
+function mediana(arr) {
+  if (!arr.length) return null;
+  const a = arr.slice().sort((x, y) => x - y), m = Math.floor(a.length / 2);
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+}
+function recorridoHtml(ops) {
+  const conMfe = ops.filter(o => mfeDe(o));
+  const ayuda = `<p class="small">Apunta en cada operación el <b>máximo a favor</b> (el precio más lejano que alcanzó) y aquí verás, por mercado, cuánto suele correr el precio y dónde te conviene poner la Salida 2.</p>`;
+  if (!conMfe.length) return `<div class="card"><h3>Recorrido máximo a favor</h3>${ayuda}</div>`;
+  const porMercado = {};
+  conMfe.forEach(o => { const k = o.instrumento || DEFAULT_INSTRUMENTO; (porMercado[k] = porMercado[k] || []).push(o); });
+  const orden = Object.keys(INSTRUMENTOS).filter(k => porMercado[k]).concat(Object.keys(porMercado).filter(k => !INSTRUMENTOS[k]));
+  const niveles = [1, 1.5, 2, 3, 4];
+  const bloques = orden.map(k => {
+    const lista = porMercado[k];
+    const ms = lista.map(mfeDe);
+    const pts = ms.map(m => m.pts), rs = ms.filter(m => m.R != null).map(m => m.R);
+    const media = (a) => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+    const capt = lista.filter(o => typeof o.puntos === "number");
+    const sumMfe = capt.reduce((a, o) => a + mfeDe(o).pts, 0);
+    const efi = sumMfe > 0 ? Math.round(capt.reduce((a, o) => a + Math.max(0, o.puntos), 0) / sumMfe * 100) : null;
+    // Objetivo óptimo: se prueban objetivos de 1R a 6R cada 0,25R
+    let mejor = null;
+    if (rs.length) for (let T = 1; T <= 6.001; T += 0.25) { const v = simularObjetivo(rs, T); if (!mejor || v > mejor.v + 1e-9) mejor = { T, v }; }
+    const comparar = [1.5, 2, 3].map(T => ({ T, v: simularObjetivo(rs, T) }));
+    return `
+    <div class="mfe-b">
+      <div class="mfe-t">${esc(INSTRUMENTOS[k] ? INSTRUMENTOS[k].nombre : k)} <span class="small">· ${lista.length} ${lista.length === 1 ? "operación" : "operaciones"}</span></div>
+      <div class="tiles" style="margin-bottom:8px">
+        <div class="tl"><div class="mini">Recorrido medio</div><div class="v">${fmtN(media(pts), 1)} pts</div><div class="s">${rs.length ? fmtR(media(rs)) : "sin stop"}</div></div>
+        <div class="tl"><div class="mini">Mediano</div><div class="v">${fmtN(mediana(pts), 1)} pts</div><div class="s">${rs.length ? fmtR(mediana(rs)) : "sin stop"}</div></div>
+        <div class="tl"><div class="mini">Eficiencia</div><div class="v">${efi == null ? "—" : efi + " %"}</div><div class="s">capturado</div></div>
+      </div>
+      ${rs.length ? `
+      <div class="mini">% de operaciones que llegan a…</div>
+      <div class="mfe-niv">${niveles.map(n => { const pc = Math.round(rs.filter(r => r >= n).length / rs.length * 100); return `<div><b>${fmtN(n, 1)}R</b><span>${pc} %</span><i style="height:${Math.max(3, pc * 0.4)}px"></i></div>`; }).join("")}</div>
+      <div class="mfe-opt">
+        <div class="mini">Objetivo óptimo para la Salida 2</div>
+        <div class="v pos">${fmtN(mejor.T, 2)}R <span class="small">→ ${fmtR(mejor.v)} de media por operación</span></div>
+        <div class="small">Comparado: ${comparar.map(c => `${fmtN(c.T, 1)}R → ${fmtR(c.v)}`).join(" · ")}</div>
+      </div>` : `<p class="small">Pon el stop inicial en estas operaciones para calcular R y objetivos.</p>`}
+    </div>`;
+  }).join("");
+  return `
+  <div class="card">
+    <h3>Recorrido máximo a favor</h3>
+    ${bloques}
+    <p class="small" style="margin-top:6px">Simulación con tu gestión: mitad en 1:1 y stop a BE; la otra mitad al objetivo. Si no llegó a 1R, cuenta como stop (−1R). Cuantas más operaciones apuntes, más fiable es.</p>
+  </div>`;
+}
 function agrupar(ops, fnClave) {
   const g = {};
   ops.forEach(o => { const ks = [].concat(fnClave(o)); ks.forEach(k => { if (k == null) return; (g[k] = g[k] || []).push(o); }); });
@@ -2345,7 +2440,7 @@ function renderStats() {
     <div class="stat"><div class="v pos">${fmtR(m.avgWinR)}</div><div class="l">Media ganadoras</div></div>
     <div class="stat"><div class="v neg">${fmtR(m.avgLossR)}</div><div class="l">Media perdedoras</div></div>
   </div>
-  ${m.sinStop ? `<p class="small center" style="margin-top:-6px">Las cifras en R no incluyen ${m.sinStop} operación${m.sinStop === 1 ? '' : 'es'} sin stop.</p>` : ""}
+  ${m.sinStop ? `<p class="small center" style="margin-top:-6px">Las cifras en R no incluyen ${m.sinStop} ${m.sinStop === 1 ? 'operación' : 'operaciones'} sin stop.</p>` : ""}
   <div class="grid2">
     <div class="stat" onclick="${m.mejor ? `openOpDetail('${m.mejor.id}')` : ''}"><div class="v pos">${m.mejor && netEUR(m.mejor) > 0 ? fmtEUR(netEUR(m.mejor), true) : "—"}</div><div class="l">Mejor operación</div></div>
     <div class="stat" onclick="${m.peor ? `openOpDetail('${m.peor.id}')` : ''}"><div class="v neg">${m.peor && netEUR(m.peor) < 0 ? fmtEUR(netEUR(m.peor), true) : "—"}</div><div class="l">Peor operación</div></div>
@@ -2358,6 +2453,7 @@ function renderStats() {
     ${m.nR ? `<canvas id="equityCanvas" height="140"></canvas>` : `<p class="small">Sin operaciones con stop en este periodo.</p>`}
   </div>
 
+  ${recorridoHtml(ops)}
   ${tablaGrupos("Por tipo de setup", porSetup, "Setup")}
   ${tablaGrupos("Por error cometido", porError, "Error")}
   ${tablaGrupos("Por mercado", porInstr, "Mercado")}
@@ -2708,8 +2804,8 @@ function calcRB() {
 }
 
 function exportCSV() {
-  const rows = [["fecha", "hora", "modo", "tipo", "instrumento", "direccion", "tipoSetup", "entrada", "stop", "salida", "salidas", "contratos", "puntos", "resultadoR", "resultadoEUR", "comision", "resultadoNetoEUR", "clasificacion", "errores", "setup", "gestion", "notas", "motivoDescartada"]];
-  state.ops.forEach(o => rows.push([o.fecha, o.hora, o.modo || "demo", o.tipo, o.instrumento, o.direccion, o.tipoSetup, o.entrada, o.stop, o.salida, (o.salidas || []).join(";"), o.contratos, o.puntos, o.resultadoR, o.resultadoEUR, o.comision, netEUR(o), resultadoTipo(o), (o.errores || []).join(";"), o.setup, o.gestion, o.notas, o.motivoDescartada]
+  const rows = [["fecha", "hora", "modo", "tipo", "instrumento", "direccion", "tipoSetup", "entrada", "stop", "salida", "salidas", "contratos", "puntos", "resultadoR", "resultadoEUR", "comision", "resultadoNetoEUR", "clasificacion", "maxFavor", "recorridoPts", "recorridoR", "errores", "setup", "gestion", "notas", "motivoDescartada"]];
+  state.ops.forEach(o => rows.push([o.fecha, o.hora, o.modo || "demo", o.tipo, o.instrumento, o.direccion, o.tipoSetup, o.entrada, o.stop, o.salida, (o.salidas || []).join(";"), o.contratos, o.puntos, o.resultadoR, o.resultadoEUR, o.comision, netEUR(o), resultadoTipo(o), o.maxFavor, mfeDe(o) ? mfeDe(o).pts : null, mfeDe(o) ? mfeDe(o).R : null, (o.errores || []).join(";"), o.setup, o.gestion, o.notas, o.motivoDescartada]
     .map(v => v === undefined || v === null ? "" : ("" + v).replace(/"/g, '""'))));
   const csv = "﻿" + rows.map(r => r.map(c => `"${c}"`).join(";")).join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -2746,6 +2842,8 @@ function seedTestData() {
     return {
       _test: true, tipo: "operacion", fecha: fechaHace(dias), hora: "10:" + String(10 + dias % 40).padStart(2, "0"),
       modo, instrumento, direccion, entrada, stop, salida, contratos: 1, tipoSetup, errores,
+      // máximo a favor de prueba: más allá de la salida (o 1,5R si fue a stop)
+      maxFavor: (() => { const sg = direccion === "CORTO" ? -1 : 1; const d = stop != null ? Math.abs(entrada - stop) : 10; const fue = sg * (salida - entrada); return Math.round((entrada + sg * Math.max(fue + d * (0.3 + (dias % 4) * 0.6), d * 0.6)) * 100) / 100; })(),
       puntos: calc.puntos, resultadoR: calc.resultadoR, resultadoEUR: calc.resultadoEUR, comision: calc.comision,
       setup: "Operación de prueba", gestion: "Datos de prueba generados automáticamente.",
       notas: "Bórrala desde Más > Datos de prueba cuando termines.",
