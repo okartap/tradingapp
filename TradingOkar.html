@@ -1397,7 +1397,7 @@ const AJUSTES_DEFAULT = {
   contratosDefecto: { NASDAQ: 2, ORO: 14, SP500: 9, DOWJONES: 1, DAX: 1 },
   etiquetas: DEFAULT_ETIQUETAS.slice(),
   revisiones: {},        // { "AAAA-MM-DD" (lunes): { error, regla, guardada } }
-  graficosDelDia: {},    // { "AAAA-MM-DD": "https://drive.google.com/..." }
+  graficosDelDia: {},    // { "AAAA-MM-DD": { NASDAQ: enlace, ORO: enlace, … } }
 };
 function mergeAjustes(a) {
   a = a || {};
@@ -2698,24 +2698,80 @@ function urlImagenDrive(link) {
   return m ? "https://drive.google.com/thumbnail?id=" + m[1] + "&sz=w2000" : link;
 }
 
-function abrirEditarGrafico(fecha) {
-  const actual = ajustes.graficosDelDia && ajustes.graficosDelDia[fecha] ? ajustes.graficosDelDia[fecha] : "";
-  const link = prompt("Pega el link de Google Drive del gráfico diario:\n\n(Comparte la imagen en Drive y copia el link aquí)", actual);
-  if (link === null) return; // Usuario canceló
+// Mercados que se estudian (pedido por Patry: normalmente Nasdaq y Oro).
+const MERCADOS_ESTUDIO = ["NASDAQ", "ORO", "SP500", "DOWJONES"];
 
+// Gráficos del día: { "AAAA-MM-DD": { NASDAQ: enlace, ORO: enlace, … } }.
+// Versiones anteriores guardaban un único enlace sin mercado (texto): se
+// muestra como "Gráfico sin mercado" para poder asignarlo.
+function graficosDe(fecha) {
+  const v = ajustes.graficosDelDia && ajustes.graficosDelDia[fecha];
+  if (!v) return {};
+  if (typeof v === "string") return { _SIN: v };
+  return { ...v };
+}
+function guardarGraficosDia(fecha, mapa) {
+  const limpio = {};
+  Object.keys(mapa).forEach(k => { if (mapa[k]) limpio[k] = mapa[k]; });
+  const vacio = !Object.keys(limpio).length;
   if (!ajustes.graficosDelDia) ajustes.graficosDelDia = {};
-  const valor = link.trim();
-  if (valor === "") delete ajustes.graficosDelDia[fecha];
-  else ajustes.graficosDelDia[fecha] = valor;
+  if (vacio) delete ajustes.graficosDelDia[fecha]; else ajustes.graficosDelDia[fecha] = limpio;
   render();
-  // Se guarda solo el gráfico de ese día (no se reescriben el resto de ajustes)
-  ajustesRef().update({
-    ["graficosDelDia." + fecha]: valor === "" ? firebase.firestore.FieldValue.delete() : valor,
-  }).then(() => {
-    toast(valor ? "✅ Gráfico guardado" : "✅ Gráfico eliminado");
-  }).catch((err) => {
-    toast("⚠️ Error al guardar: " + (err && err.message || err));
-  });
+  // Se guarda solo ese día (no se reescriben el resto de ajustes)
+  return ajustesRef().update({ ["graficosDelDia." + fecha]: vacio ? firebase.firestore.FieldValue.delete() : limpio });
+}
+
+let graficoForm = null; // { fecha, mercado, desdeSin }
+function abrirEditarGrafico(fecha, mercado, desdeSin) {
+  const g = graficosDe(fecha);
+  graficoForm = { fecha, mercado: mercado || "", desdeSin: !!desdeSin };
+  const actual = desdeSin ? g._SIN : (mercado ? g[mercado] || "" : "");
+  openModal(`
+  <div class="fm">
+  <div class="modal-handle"></div>
+  <div class="modal-title"><h2>${desdeSin ? "Asignar mercado" : mercado && g[mercado] ? "Cambiar gráfico" : "Agregar gráfico"}</h2><button class="close" onclick="closeModal()">✕</button></div>
+  <p style="text-align:center;margin:10px 0 4px;">${fechaLarga(fecha)}</p>
+  <label>Mercado</label>
+  <div class="chip-row" id="gr_mercado" style="margin-bottom:0">
+    ${MERCADOS_ESTUDIO.map(k => `<button type="button" class="chip ${graficoForm.mercado === k ? 'active' : ''}" data-m="${k}" onclick="document.querySelectorAll('#gr_mercado .chip').forEach(b=>b.classList.toggle('active',b===this))">${INSTRUMENTOS[k].corto}${g[k] && k !== graficoForm.mercado ? ' ✓' : ''}</button>`).join("")}
+  </div>
+  <label>Enlace de Google Drive</label>
+  <input type="url" id="gr_link" value="${esc(actual)}" placeholder="Pega aquí el enlace de la imagen" ${desdeSin ? "readonly" : ""}>
+  <p style="text-align:center;font-size:12.5px;margin-top:8px;">En Drive: clic derecho en la imagen → Compartir → Copiar enlace.</p>
+  <button class="btn btn-primary" style="margin-top:10px" onclick="guardarGraficoForm()">Guardar gráfico</button>
+  ${actual && !desdeSin ? `<button class="btn btn-red" style="margin-top:8px" onclick="quitarGraficoForm()">Quitar gráfico</button>` : ""}
+  </div>`);
+}
+function guardarGraficoForm() {
+  if (!graficoForm) return;
+  const btn = document.querySelector("#gr_mercado .chip.active");
+  const link = (document.getElementById("gr_link").value || "").trim();
+  if (!btn) { toast("Elige el mercado del gráfico"); return; }
+  if (!link) { toast("Pega el enlace de la imagen"); return; }
+  const { fecha, mercado, desdeSin } = graficoForm;
+  const nuevo = btn.dataset.m;
+  const g = graficosDe(fecha);
+  if (g[nuevo] && nuevo !== mercado && !confirm(`${INSTRUMENTOS[nuevo].corto} ya tiene gráfico este día. ¿Sustituirlo?`)) return;
+  if (desdeSin) delete g._SIN;
+  if (mercado && mercado !== nuevo) delete g[mercado];
+  g[nuevo] = link;
+  closeModal();
+  guardarGraficosDia(fecha, g).then(() => toast("✅ Gráfico guardado"), saveErr);
+}
+function quitarGraficoForm() {
+  if (!graficoForm || !confirm("¿Quitar este gráfico? (la imagen sigue en tu Drive)")) return;
+  const { fecha, mercado } = graficoForm;
+  const g = graficosDe(fecha);
+  delete g[mercado];
+  closeModal();
+  guardarGraficosDia(fecha, g).then(() => toast("Gráfico quitado"), saveErr);
+}
+function graficoHtml(fecha, mercado, link) {
+  const url = urlImagenDrive(link);
+  return `<div style="margin:4px 0 12px;">
+    <img src="${esc(url)}" alt="Gráfico" onclick="verGraficoGrande('${esc(url)}')" style="width:100%;border-radius:8px;max-height:340px;object-fit:contain;cursor:zoom-in;display:block;">
+    <button class="btn btn-sm btn-ghost" style="margin-top:8px" onclick="abrirEditarGrafico('${fecha}', '${mercado}')">Cambiar gráfico</button>
+  </div>`;
 }
 
 function renderEstudios() {
@@ -2725,51 +2781,56 @@ function renderEstudios() {
     .sort((a, b) => (a.hora || "").localeCompare(b.hora || ""));
   const porMercado = {};
   delDia.forEach(e => { (porMercado[e.instrumento] = porMercado[e.instrumento] || []).push(e); });
-  const mercados = Object.keys(INSTRUMENTOS).filter(k => porMercado[k]);
-  const graficoUrl = urlImagenDrive(ajustes.graficosDelDia && ajustes.graficosDelDia[fecha]);
+  const graficos = graficosDe(fecha);
+  // Orden fijo: Nasdaq, Oro, S&P 500, Dow Jones (y cualquier otro con entradas)
+  const orden = [...MERCADOS_ESTUDIO, ...Object.keys(porMercado).filter(k => !MERCADOS_ESTUDIO.includes(k))];
+  const mercados = orden.filter(k => porMercado[k] || graficos[k]);
 
   let html = `
-  <div style="text-align:center;margin-bottom:16px;">
+  <div style="text-align:center;margin-bottom:14px;">
     <div class="est-nav">
       <button class="flecha" onclick="elegirFechaEstudios(sumarDiasStr(state.estudiosFecha, -1))" aria-label="Día anterior">◀</button>
       ${datePickerHtml("est_fecha", fecha, elegirFechaEstudios)}
       <button class="flecha" onclick="elegirFechaEstudios(sumarDiasStr(state.estudiosFecha, 1))" aria-label="Día siguiente">▶</button>
     </div>
-    <div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;">
+    <div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:12px;">
       ${delDia.length} entrada${delDia.length !== 1 ? 's' : ''} del sistema
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-sm btn-ghost" style="flex:1" onclick="abrirEditarGrafico('${fecha}')">📊 Gráfico</button>
+      <button class="btn btn-sm btn-primary" style="flex:1" onclick="openEstudioForm()">+ Entrada</button>
     </div>
   </div>`;
 
-  if (graficoUrl) {
-    html += `
-    <div class="card" style="text-align:center;">
-      <img src="${esc(graficoUrl)}" alt="Gráfico ${fmtDate(fecha)}" onclick="verGraficoGrande('${esc(graficoUrl)}')" style="width:100%;border-radius:8px;margin-bottom:10px;max-height:320px;object-fit:contain;cursor:zoom-in;">
-      <button class="btn btn-sm btn-ghost" onclick="abrirEditarGrafico('${fecha}')">Cambiar gráfico</button>
-    </div>`;
-  } else {
-    html += `
-    <div class="card" style="text-align:center;padding:20px;">
-      <p style="color:var(--muted2);margin-bottom:10px;">Sin gráfico para este día</p>
-      <button class="btn btn-sm btn-primary" onclick="abrirEditarGrafico('${fecha}')">📊 Agregar gráfico</button>
+  if (graficos._SIN) {
+    html += `<div class="card">
+      <h3 style="margin:0 0 8px 0;color:var(--amber);">Gráfico sin mercado</h3>
+      <img src="${esc(urlImagenDrive(graficos._SIN))}" alt="Gráfico" style="width:100%;border-radius:8px;max-height:260px;object-fit:contain;display:block;">
+      <button class="btn btn-sm btn-primary" style="margin-top:8px" onclick="abrirEditarGrafico('${fecha}', '', true)">Asignar a un mercado</button>
     </div>`;
   }
 
-  if (!delDia.length) {
+  if (!mercados.length) {
     html += `<div class="card" style="text-align:center;padding:28px 16px;">
-      <p style="color:var(--muted2);margin-bottom:12px;">Sin entradas de estudio este día</p>
-      <button class="btn btn-sm btn-primary" onclick="openEstudioForm()">+ Nueva entrada de estudio</button>
+      <p style="color:var(--muted2);margin:0;">Sin gráficos ni entradas de estudio este día</p>
     </div>`;
     return html;
   }
 
-  if (mercados.length > 1) html += estudioResumenHtml("Total del día", delDia);
+  const mercadosConEntradas = mercados.filter(k => porMercado[k]);
+  if (mercadosConEntradas.length > 1) html += estudioResumenHtml("Total del día", delDia);
 
   mercados.forEach(k => {
-    const lista = porMercado[k];
-    html += `<div class="card">${estudioResumenInner(INSTRUMENTOS[k].corto, lista)}
-      <div style="border-top:1px solid var(--border);margin-top:12px;">
-        ${lista.map((e, i) => estudioFilaHtml(e, i < lista.length - 1)).join("")}
-      </div></div>`;
+    const lista = porMercado[k] || [];
+    const nombre = (INSTRUMENTOS[k] && INSTRUMENTOS[k].corto) || k;
+    html += `<div class="card">`;
+    html += lista.length ? estudioResumenInner(nombre, lista)
+      : `<h3 style="margin:0 0 4px 0;color:var(--text);">${esc(nombre)}</h3><div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Sin entradas todavía</div>`;
+    if (graficos[k]) html += `<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px;">${graficoHtml(fecha, k, graficos[k])}</div>`;
+    else html += `<button class="btn btn-sm btn-ghost" style="margin-top:12px" onclick="abrirEditarGrafico('${fecha}', '${k}')">📊 Agregar gráfico de ${esc(nombre)}</button>`;
+    if (lista.length) html += `<div style="border-top:1px solid var(--border);margin-top:12px;">${lista.map((e, i) => estudioFilaHtml(e, i < lista.length - 1)).join("")}</div>`;
+    else html += `<button class="btn btn-sm btn-primary" style="margin-top:8px" onclick="openEstudioForm(null, '${k}')">+ Entrada de ${esc(nombre)}</button>`;
+    html += `</div>`;
   });
   return html;
 }
@@ -2865,11 +2926,12 @@ function verGraficoGrande(url) {
 
 // ---------- Formulario de entrada de estudio ----------
 let estudioEditId = null;
-function openEstudioForm(id) {
+function openEstudioForm(id, mercadoIni) {
   const e = id ? (state.estudios || []).find(x => x.id === id) : {};
   if (id && !e) return;
   estudioEditId = id || null;
-  const instr = e.instrumento || DEFAULT_INSTRUMENTO;
+  const instr = e.instrumento || mercadoIni || MERCADOS_ESTUDIO[0];
+  const listaMerc = MERCADOS_ESTUDIO.includes(instr) ? MERCADOS_ESTUDIO : [...MERCADOS_ESTUDIO, instr];
   const res = e.resultado || "";
   const modoM = e.manualModo || "precio";
   const numIn = (idc, v, ph) => `<input type="number" step="any" inputmode="decimal" id="${idc}" value="${typeof v === 'number' ? v : ''}" placeholder="${ph || ''}" oninput="previewEstudio()">`;
@@ -2883,7 +2945,7 @@ function openEstudioForm(id) {
     <div><label>Contratos</label><input type="number" inputmode="numeric" min="1" step="1" id="es_contratos" value="${typeof e.contratos === 'number' ? e.contratos : getContratosDefecto(instr)}" oninput="previewEstudio()"></div>
   </div>
   <div class="r3b">
-    <div><label>Mercado</label><select id="es_instrumento" onchange="document.getElementById('es_contratos').value=getContratosDefecto(this.value);previewEstudio()">${Object.keys(INSTRUMENTOS).map(k => `<option value="${k}" ${instr === k ? 'selected' : ''}>${INSTRUMENTOS[k].corto}</option>`).join("")}</select></div>
+    <div><label>Mercado</label><select id="es_instrumento" onchange="document.getElementById('es_contratos').value=getContratosDefecto(this.value);previewEstudio()">${listaMerc.map(k => `<option value="${k}" ${instr === k ? 'selected' : ''}>${INSTRUMENTOS[k].corto}</option>`).join("")}</select></div>
     <div><label>Dirección</label><select id="es_direccion" onchange="previewEstudio()"><option value="LARGO" ${e.direccion !== 'CORTO' ? 'selected' : ''}>Largo</option><option value="CORTO" ${e.direccion === 'CORTO' ? 'selected' : ''}>Corto</option></select></div>
     <div><label>Tipo</label><select id="es_tipo"><option value="">—</option>${TIPOS_SETUP.map(t => `<option value="${t}" ${e.tipoSetup === t ? 'selected' : ''}>${t}</option>`).join("")}</select></div>
   </div>
