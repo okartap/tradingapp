@@ -372,6 +372,8 @@ th,td{text-align:center !important;}
     <div class="nav-icon">📓</div><div class="nav-label">Diario</div></button>
   <button data-tab="stats" onclick="goTab('stats')">
     <div class="nav-icon">📈</div><div class="nav-label">Stats</div></button>
+  <button data-tab="estudios" onclick="goTab('estudios')">
+    <div class="nav-icon">🔬</div><div class="nav-label">Estudios</div></button>
   <button data-tab="referencia" onclick="goTab('referencia')">
     <div class="nav-icon">📘</div><div class="nav-label">Guía</div></button>
   <button data-tab="mas" onclick="goTab('mas')">
@@ -404,7 +406,7 @@ const INSTRUMENTOS = {
 const DEFAULT_INSTRUMENTO = "NASDAQ";
 
 // ---------- Registro de operaciones ----------
-const TIPOS_SETUP = ["Continuidad", "Giro", "Testeo a zona perdida"];
+const TIPOS_SETUP = ["T-Continuidad", "T-Giro", "W-Continuidad", "W-Giro"];
 const DEFAULT_ETIQUETAS = ["FOMO", "Entrada anticipada", "Sin planteamiento", "Stop movido", "Cierre precipitado", "Sobreoperar", "Revancha"];
 
 // ---------- Helpers de maquetación de la Guía ----------
@@ -1345,6 +1347,7 @@ let state = {
   ops: [], tab: "dashboard", modo: "demo",
   diarioFilter: "todas", diarioModo: "todas", diarioSearch: "",
   periodo: "todo", semanaRev: 0, refSearch: "", periodoGraf: 0, // la gráfica de Inicio abre siempre en "Todo"
+  estudiosFecha: null, // Pestaña ESTUDIOS: se inicializa a la fecha actual en renderEstudios()
 };
 
 // =====================================================================
@@ -1385,6 +1388,8 @@ function mergeAjustes(a) {
     contratosDefecto: { ...AJUSTES_DEFAULT.contratosDefecto, ...(a.contratosDefecto || {}) },
     etiquetas: Array.isArray(a.etiquetas) && a.etiquetas.length ? a.etiquetas.slice() : DEFAULT_ETIQUETAS.slice(),
     revisiones: { ...(a.revisiones || {}) },
+    // Flags de migración
+    migracionTiposSetup_2026Oct06: a.migracionTiposSetup_2026Oct06 || false,
   };
 }
 function lsJSON(key, def) { try { const v = JSON.parse(localStorage.getItem(key) || "null"); return v == null ? def : v; } catch (e) { return def; } }
@@ -1406,7 +1411,7 @@ function attachAjustesListener() {
       if (!snap.exists) return;
       ajustes = mergeAjustes(snap.data());
       cacheAjustes();
-      if (["dashboard", "diario", "stats"].includes(state.tab)) render();
+      if (["dashboard", "diario", "stats", "estudios"].includes(state.tab)) render();
     }, () => {});
   };
   ref.get().then((snap) => {
@@ -1549,6 +1554,23 @@ function rangoPeriodo(p) {
 }
 function enRango(o, [desde, hasta]) { return (o.fecha || "") >= desde && (o.fecha || "") <= hasta; }
 
+// ---------- Helpers para ESTUDIOS (análisis diario) ----------
+function sumarDiasStr(fechaStr, n) {
+  const [y, m, d] = fechaStr.split("-");
+  return ymd(sumarDias(new Date(parseInt(y), parseInt(m) - 1, parseInt(d)), n));
+}
+function opsDelDia(fecha) { return state.ops.filter(o => o.fecha === fecha); }
+function opsDelDiaAgrupadasPorMercado(fecha) {
+  const ops = opsDelDia(fecha);
+  const agrupadas = {};
+  ops.forEach(o => {
+    const instr = o.instrumento || "DESCONOCIDO";
+    if (!agrupadas[instr]) agrupadas[instr] = [];
+    agrupadas[instr].push(o);
+  });
+  return agrupadas;
+}
+
 // ---------- Límites de riesgo diario ----------
 function estadoRiesgoHoy(modo) {
   const hoy = todayStr();
@@ -1588,7 +1610,7 @@ function initFirebase(cfg) {
       attachAjustesListener();
       attachOpsListener();
       let last = localStorage.getItem(LS_LAST_TAB) || "dashboard";
-      if (!["dashboard", "diario", "stats", "referencia", "mas"].includes(last)) last = "dashboard";
+      if (!["dashboard", "diario", "stats", "estudios", "referencia", "mas"].includes(last)) last = "dashboard";
       goTab(last);
     } else {
       currentUser = null;
@@ -1630,10 +1652,57 @@ function attachOpsListener() {
     .orderBy("fecha", "desc").orderBy("hora", "desc")
     .onSnapshot((snap) => {
       state.ops = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter(o => o.tipo !== "ajustes");
+      // Ejecuta la migración de tipos de setup una sola vez
+      if (!ajustes.migracionTiposSetup_2026Oct06) {
+        migrateOpTypes();
+      }
       // Solo se redibujan las pestañas que muestran operaciones: así no se
       // cierra la sección de la Guía ni se borra lo que escribes en Más.
-      if (["dashboard", "diario", "stats"].includes(state.tab)) render();
+      if (["dashboard", "diario", "stats", "estudios"].includes(state.tab)) render();
     }, (err) => { toast("Error al leer datos: " + err.message); });
+}
+
+// Migración automática: convierte tipos antiguos a nueva nomenclatura T- / W-
+// "Continuidad" → "T-Continuidad"
+// "Giro" → "T-Giro"
+// "Testeo a zona perdida" → "T-Continuidad"
+function migrateOpTypes() {
+  const opsToMigrate = state.ops.filter(o => {
+    const tipo = o.tipoSetup;
+    return tipo === "Continuidad" || tipo === "Giro" || tipo === "Testeo a zona perdida";
+  });
+
+  if (opsToMigrate.length === 0) {
+    // No hay nada que migrar, marca como hecho
+    ajustes.migracionTiposSetup_2026Oct06 = true;
+    ajustesRef().update(ajustesPayload()).catch(() => {});
+    return;
+  }
+
+  const mapping = {
+    "Continuidad": "T-Continuidad",
+    "Giro": "T-Giro",
+    "Testeo a zona perdida": "T-Continuidad"
+  };
+
+  // Actualiza cada operación con el nuevo tipo
+  const updates = opsToMigrate.map(op => {
+    const newTipo = mapping[op.tipoSetup];
+    return opsCol().doc(op.id).update({ tipoSetup: newTipo });
+  });
+
+  // Espera a que se actualicen todas y marca la migración como completada
+  Promise.all(updates)
+    .then(() => {
+      ajustes.migracionTiposSetup_2026Oct06 = true;
+      return ajustesRef().update(ajustesPayload());
+    })
+    .then(() => {
+      toast(`✅ Migración completada: ${opsToMigrate.length} operaciones actualizadas`);
+    })
+    .catch((err) => {
+      toast("⚠️ Error en migración de tipos: " + (err && err.message || err));
+    });
 }
 
 // Firestore aplica el cambio en el dispositivo al instante; la promesa solo
@@ -1721,6 +1790,7 @@ function render() {
   if (state.tab === "dashboard") v.innerHTML = renderDashboard();
   else if (state.tab === "diario") v.innerHTML = renderDiario();
   else if (state.tab === "stats") v.innerHTML = renderStats();
+  else if (state.tab === "estudios") v.innerHTML = renderEstudios();
   else if (state.tab === "referencia") v.innerHTML = renderReferencia();
   else if (state.tab === "mas") v.innerHTML = renderMas();
   if (state.tab === "stats") drawStatsCharts();
@@ -2027,7 +2097,7 @@ function openOpForm(id) {
   <div class="r3b">
     <div><label>Mercado</label><select id="f_instrumento" oninput="alCambiarMercado(${isEdit ? 'false' : 'true'});updateOpPreview();updateRiesgo();actualizarSugerencia11()">${Object.keys(INSTRUMENTOS).map(k => `<option value="${k}" ${(o.instrumento || DEFAULT_INSTRUMENTO) === k ? 'selected' : ''}>${INSTRUMENTOS[k].corto}</option>`).join("")}</select></div>
     <div><label>Dirección</label><select id="f_direccion" oninput="updateOpPreview();actualizarSugerencia11()"><option value="LARGO" ${o.direccion === 'LARGO' ? 'selected' : ''}>Largo</option><option value="CORTO" ${o.direccion === 'CORTO' ? 'selected' : ''}>Corto</option></select></div>
-    <div><label>Setup</label><select id="f_tiposetup"><option value="">—</option>${TIPOS_SETUP.map(t => `<option value="${t}" ${o.tipoSetup === t ? 'selected' : ''}>${t === "Testeo a zona perdida" ? "Testeo" : t}</option>`).join("")}</select></div>
+    <div><label>Setup</label><select id="f_tiposetup"><option value="">—</option>${TIPOS_SETUP.map(t => `<option value="${t}" ${o.tipoSetup === t ? 'selected' : ''}>${t}</option>`).join("")}</select></div>
   </div>
   <div class="r3b">
     <div><label>Entrada</label><input type="number" step="any" inputmode="decimal" min="0" id="f_entrada" value="${o.entrada ?? ''}" oninput="updateOpPreview();updateRiesgo();actualizarSugerencia11()"></div>
@@ -2596,6 +2666,85 @@ function refreshRefList() {
   const el = document.getElementById("refList");
   if (el) el.innerHTML = refListHtml();
 }
+
+function renderEstudios() {
+  const fecha = state.estudiosFecha || todayStr();
+  const opsHoy = opsDelDiaAgrupadasPorMercado(fecha);
+  const mercados = Object.keys(opsHoy).sort();
+  const totalOps = Object.values(opsHoy).flat().length;
+
+  let html = `
+  <div style="text-align:center;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px;">
+      <button class="btn btn-sm btn-ghost" onclick="state.estudiosFecha = sumarDiasStr(state.estudiosFecha, -1); render();">◀ Ant.</button>
+      <input type="date" value="${fecha}" onchange="state.estudiosFecha = this.value; render();"
+             style="flex:1;max-width:200px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);text-align:center;font-size:14px;font-weight:600;">
+      <button class="btn btn-sm btn-ghost" onclick="state.estudiosFecha = sumarDiasStr(state.estudiosFecha, 1); render();">Sig. ▶</button>
+    </div>
+    <div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;">
+      ${totalOps} operación${totalOps !== 1 ? 'es' : ''} • ${fmtDate(fecha)}
+    </div>
+  </div>`;
+
+  if (totalOps === 0) {
+    html += `<div class="card" style="text-align:center;padding:32px 16px;"><p style="color:var(--muted2);">Sin operaciones en este día</p></div>`;
+  } else {
+    mercados.forEach(mercado => {
+      const ops = opsHoy[mercado];
+      const met = calcMetricas(ops);
+      const instrInfo = INSTRUMENTOS[mercado] || { corto: mercado };
+
+      html += `
+      <div class="card">
+        <div style="text-align:center;margin-bottom:12px;">
+          <h3 style="margin:0 0 4px 0;color:var(--text);">${instrInfo.corto}</h3>
+          <div style="font-size:12px;color:var(--muted);">${ops.length} operación${ops.length !== 1 ? 'es' : ''}</div>
+        </div>
+        <div class="grid2" style="margin-bottom:12px;">
+          <div class="stat">
+            <div class="v ${met.netTotal >= 0 ? 'pos' : 'neg'}">${fmtEUR(met.netTotal)}</div>
+            <div class="l">Neto</div>
+          </div>
+          <div class="stat">
+            <div class="v">${met.wins}W / ${met.losses}L</div>
+            <div class="l">W/L</div>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:12px;">`;
+
+      ops.forEach((o, i) => {
+        const resultado = resultadoTipo(o);
+        const neto = netEUR(o) || 0;
+        const badgeClass = resultado === "win" ? "badge-pos" : resultado === "loss" ? "badge-neg" : "badge-be";
+
+        html += `
+          <div style="padding:10px 0;border-bottom:${i < ops.length - 1 ? '1px solid var(--border)' : 'none'};">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <div style="font-weight:600;font-size:13px;color:var(--text);">
+                ${o.hora || '—'} • ${o.tipoSetup || '—'}
+              </div>
+              <div style="font-weight:700;color:${neto >= 0 ? 'var(--green)' : 'var(--red)'};font-size:14px;">
+                ${fmtEUR(neto, true)}
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;font-size:11px;color:var(--muted);">
+              <span>E: ${fmtN(o.entrada, 2)}</span>
+              <span>Stop: ${fmtN(o.stop, 2)}</span>
+              <span>TP1: ${fmtN(o.tp1, 2)}</span>
+              ${o.tp2 ? `<span>TP2: ${fmtN(o.tp2, 2)}</span>` : ''}
+            </div>
+          </div>`;
+      });
+
+      html += `
+        </div>
+      </div>`;
+    });
+  }
+
+  return html;
+}
+
 function renderReferencia() {
   return `
   <div class="searchbar">
@@ -2822,20 +2971,20 @@ function seedTestData() {
   const fechaHace = (dias) => ymd(sumarDias(hoy, -dias));
   // [días atrás, modo, mercado, dirección, entrada, stop, salida, tipo setup, errores]
   const filas = [
-    [18, "demo", "DAX", "LARGO", 18500, 18480, 18536, "Continuidad", []],
-    [17, "demo", "SP500", "CORTO", 5000, 5010, 5010, "Giro", ["Entrada anticipada"]],
-    [15, "demo", "DAX", "LARGO", 18500, 18480, 18548, "Continuidad", []],
-    [13, "demo", "NASDAQ", "CORTO", 20000, 20030, 19964, "Giro", []],
-    [11, "demo", "SP500", "LARGO", 5000, 4990, 4990, "Testeo a zona perdida", ["FOMO", "Sin planteamiento"]],
-    [9, "demo", "DAX", "LARGO", 18500, 18480, 18562, "Continuidad", []],
-    [7, "demo", "SP500", "CORTO", 5000, 5010, 4992, "Giro", ["Cierre precipitado"]],
-    [5, "demo", "DAX", "CORTO", 18500, 18520, 18520, "Giro", ["Revancha"]],
-    [3, "demo", "NASDAQ", "LARGO", 20000, 19970, 20000.5, "Continuidad", []],
-    [1, "demo", "SP500", "LARGO", 5000, 4990, 5020, "Testeo a zona perdida", []],
-    [0, "demo", "DAX", "LARGO", 18500, null, 18530, "Continuidad", []],
-    [14, "real", "DAX", "LARGO", 18500, 18480, 18528, "Continuidad", []],
-    [8, "real", "DAX", "CORTO", 18500, 18520, 18520, "Giro", ["Stop movido"]],
-    [4, "real", "SP500", "LARGO", 5000, 4990, 5019, "Continuidad", []],
+    [18, "demo", "DAX", "LARGO", 18500, 18480, 18536, "T-Continuidad", []],
+    [17, "demo", "SP500", "CORTO", 5000, 5010, 5010, "T-Giro", ["Entrada anticipada"]],
+    [15, "demo", "DAX", "LARGO", 18500, 18480, 18548, "T-Continuidad", []],
+    [13, "demo", "NASDAQ", "CORTO", 20000, 20030, 19964, "T-Giro", []],
+    [11, "demo", "SP500", "LARGO", 5000, 4990, 4990, "T-Continuidad", ["FOMO", "Sin planteamiento"]],
+    [9, "demo", "DAX", "LARGO", 18500, 18480, 18562, "T-Continuidad", []],
+    [7, "demo", "SP500", "CORTO", 5000, 5010, 4992, "T-Giro", ["Cierre precipitado"]],
+    [5, "demo", "DAX", "CORTO", 18500, 18520, 18520, "T-Giro", ["Revancha"]],
+    [3, "demo", "NASDAQ", "LARGO", 20000, 19970, 20000.5, "T-Continuidad", []],
+    [1, "demo", "SP500", "LARGO", 5000, 4990, 5020, "T-Continuidad", []],
+    [0, "demo", "DAX", "LARGO", 18500, null, 18530, "T-Continuidad", []],
+    [14, "real", "DAX", "LARGO", 18500, 18480, 18528, "T-Continuidad", []],
+    [8, "real", "DAX", "CORTO", 18500, 18520, 18520, "T-Giro", ["Stop movido"]],
+    [4, "real", "SP500", "LARGO", 5000, 4990, 5019, "T-Continuidad", []],
   ];
   const ops = filas.map(([dias, modo, instrumento, direccion, entrada, stop, salida, tipoSetup, errores]) => {
     const calc = calcResultado({ instrumento, direccion, entrada, stop, ordenes: [{ salida, contratos: 1 }] });
