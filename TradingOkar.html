@@ -45,13 +45,13 @@ label{display:block;font-size:11px;color:var(--muted);margin:12px 0 5px;font-wei
 header.topbar{
   position:sticky;top:0;z-index:20;background:rgba(14,21,32,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   padding:env(safe-area-inset-top) 16px 0;height:calc(62px + env(safe-area-inset-top));border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
+  display:flex;align-items:center;justify-content:center;position:relative;
 }
-header.topbar .brand{display:flex;align-items:center;gap:10px;}
-header.topbar .logo{width:32px;height:32px;border-radius:9px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;display:block;}
-header.topbar .brand-text div:first-child{font-weight:700;font-size:14px;letter-spacing:1.6px;text-transform:uppercase;color:var(--silver);}
-header.topbar .brand-text div:last-child{font-size:10.5px;color:var(--muted);font-family:'Crimson Pro',Georgia,serif;font-style:italic;letter-spacing:.3px;margin-top:1px;}
-header.topbar .header-add-btn{width:34px;height:34px;flex-shrink:0;border-radius:50%;background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--silver);color:var(--silver);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;}
+header.topbar .brand{display:flex;flex-direction:column;align-items:center;gap:4px;}
+header.topbar .logo{width:32px;height:32px;border-radius:9px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;display:none;}
+header.topbar .brand-text div:first-child{font-weight:700;font-size:14px;letter-spacing:1.6px;text-transform:uppercase;color:var(--silver);text-align:center;}
+header.topbar .brand-text div:last-child{font-size:10.5px;color:var(--muted);font-family:'Crimson Pro',Georgia,serif;font-style:italic;letter-spacing:.3px;margin-top:2px;text-align:center;}
+header.topbar .header-add-btn{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:34px;height:34px;flex-shrink:0;border-radius:50%;background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--silver);color:var(--silver);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;}
 main{padding:18px 16px;}
 
 /* Bottom nav */
