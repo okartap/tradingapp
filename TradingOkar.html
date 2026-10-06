@@ -2770,7 +2770,7 @@ function graficoHtml(fecha, mercado, link) {
   const url = urlImagenDrive(link);
   return `<div style="margin:4px 0 12px;">
     <img src="${esc(url)}" alt="Gráfico" onclick="verGraficoGrande('${esc(url)}')" style="width:100%;border-radius:8px;max-height:340px;object-fit:contain;cursor:zoom-in;display:block;">
-    <button class="btn btn-sm btn-ghost" style="margin-top:8px" onclick="abrirEditarGrafico('${fecha}', '${mercado}')">Cambiar gráfico</button>
+    <button class="btn btn-sm btn-primary" style="margin-top:8px" onclick="abrirEditarGrafico('${fecha}', '${mercado}')">Cambiar gráfico</button>
   </div>`;
 }
 
@@ -2797,7 +2797,7 @@ function renderEstudios() {
       ${delDia.length} entrada${delDia.length !== 1 ? 's' : ''} del sistema
     </div>
     <div class="btn-row">
-      <button class="btn btn-sm btn-ghost" style="flex:1" onclick="abrirEditarGrafico('${fecha}')">📊 Gráfico</button>
+      <button class="btn btn-sm btn-primary" style="flex:1" onclick="abrirEditarGrafico('${fecha}')">+ Gráfico</button>
       <button class="btn btn-sm btn-primary" style="flex:1" onclick="openEstudioForm()">+ Entrada</button>
     </div>
   </div>`;
@@ -2827,7 +2827,7 @@ function renderEstudios() {
     html += lista.length ? estudioResumenInner(nombre, lista)
       : `<h3 style="margin:0 0 4px 0;color:var(--text);">${esc(nombre)}</h3><div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Sin entradas todavía</div>`;
     if (graficos[k]) html += `<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px;">${graficoHtml(fecha, k, graficos[k])}</div>`;
-    else html += `<button class="btn btn-sm btn-ghost" style="margin-top:12px" onclick="abrirEditarGrafico('${fecha}', '${k}')">📊 Agregar gráfico de ${esc(nombre)}</button>`;
+    else html += `<button class="btn btn-sm btn-primary" style="margin-top:12px" onclick="abrirEditarGrafico('${fecha}', '${k}')">+ Gráfico de ${esc(nombre)}</button>`;
     if (lista.length) html += `<div style="border-top:1px solid var(--border);margin-top:12px;">${lista.map((e, i) => estudioFilaHtml(e, i < lista.length - 1)).join("")}</div>`;
     else html += `<button class="btn btn-sm btn-primary" style="margin-top:8px" onclick="openEstudioForm(null, '${k}')">+ Entrada de ${esc(nombre)}</button>`;
     html += `</div>`;
