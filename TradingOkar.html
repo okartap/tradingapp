@@ -45,10 +45,10 @@ label{display:block;font-size:11px;color:var(--muted);margin:12px 0 5px;font-wei
 header.topbar{
   position:sticky;top:0;z-index:20;background:rgba(14,21,32,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   padding:env(safe-area-inset-top) 16px 0;height:calc(62px + env(safe-area-inset-top));border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:center;position:relative;
+  display:flex;align-items:center;justify-content:center;
 }
 header.topbar .brand{display:flex;flex-direction:column;align-items:center;gap:4px;}
-header.topbar .logo{width:32px;height:32px;border-radius:9px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;display:none;}
+header.topbar .logo{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:9px;object-fit:cover;border:1px solid var(--border);display:block;}
 header.topbar .brand-text div:first-child{font-weight:700;font-size:14px;letter-spacing:1.6px;text-transform:uppercase;color:var(--silver);text-align:center;}
 header.topbar .brand-text div:last-child{font-size:10.5px;color:var(--muted);font-family:'Crimson Pro',Georgia,serif;font-style:italic;letter-spacing:.3px;margin-top:2px;text-align:center;}
 header.topbar .header-add-btn{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:34px;height:34px;flex-shrink:0;border-radius:50%;background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--silver);color:var(--silver);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;}
@@ -148,6 +148,31 @@ tr:last-child td{border-bottom:none;}
 
 .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;color:var(--silver);z-index:80;opacity:0;transition:opacity .2s;pointer-events:none;}
 .toast.show{opacity:1;}
+
+/* Selector de fecha propio (calendario mensual estilo iOS) */
+.dp-btn{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:11px 13px;font-size:15px;font-weight:600;font-family:'Rajdhani',sans-serif;text-align:center;letter-spacing:.3px;}
+.dp-btn:active{border-color:var(--silver);}
+.cal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;}
+.cal{background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:360px;padding:16px 14px 14px;box-shadow:0 12px 40px rgba(0,0,0,.5);}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.cal-head .mes{flex:1;text-align:center;font-weight:700;font-size:16px;letter-spacing:1px;text-transform:uppercase;color:var(--silver);}
+.cal-head button{width:36px;height:36px;border-radius:50%;background:var(--card);border:1px solid var(--border);color:var(--silver);font-size:16px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;}
+.cal-grid .dow{font-size:10.5px;font-weight:700;color:var(--muted2);letter-spacing:1px;padding:4px 0 6px;}
+.cal-grid button{aspect-ratio:1;border-radius:50%;background:none;color:var(--text);font-size:15px;font-weight:600;font-family:'Rajdhani',sans-serif;}
+.cal-grid button:active{background:var(--card2);}
+.cal-grid button.hoy{color:var(--accent2);box-shadow:inset 0 0 0 1px var(--accent2);}
+.cal-grid button.sel{background:var(--silver);color:var(--bg);box-shadow:none;}
+.cal-grid button.finde{color:var(--muted);}
+.cal-grid button.sel.finde{color:var(--bg);}
+.cal-foot{display:flex;gap:8px;margin-top:12px;}
+.cal-foot .btn{padding:10px;}
+.est-nav{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;}
+.est-nav .flecha{width:42px;height:42px;flex-shrink:0;border-radius:50%;background:var(--card);border:1px solid var(--border);color:var(--silver);font-size:15px;}
+.est-nav .dp-btn{flex:1;max-width:240px;}
+.fm .dp-btn{padding:8px 6px;font-size:14px;}
+.est-kpis .stat{padding:12px 4px;}
+.est-kpis .stat .v{font-size:clamp(14px,4.4vw,19px);white-space:nowrap;}
 
 .empty{text-align:center;padding:40px 10px;color:var(--muted2);}
 .empty svg{width:38px;height:38px;stroke:var(--muted2);fill:none;stroke-width:1.5;margin-bottom:10px;}
@@ -354,10 +379,10 @@ th,td{text-align:center !important;}
       <img class="logo" src="icon-192.png" alt="Okartap">
       <div class="brand-text">
         <div>Okartap</div>
-        <div id="topSub">Diario · Stats · Manual</div>
+        <div id="topSub">Diario · Stats · Estudios · Manual</div>
       </div>
     </div>
-    <button class="header-add-btn" onclick="openOpForm()" aria-label="Nueva operación">+</button>
+    <button class="header-add-btn" onclick="botonNuevo()" aria-label="Nuevo">+</button>
   </header>
 
   <main id="view"></main>
@@ -1344,7 +1369,7 @@ const DEFAULT_FB_CONFIG = {
 
 let db, auth, currentUser = null, unsubscribeOps = null, unsubscribeAjustes = null;
 let state = {
-  ops: [], tab: "dashboard", modo: "demo",
+  ops: [], estudios: [], tab: "dashboard", modo: "demo",
   diarioFilter: "todas", diarioModo: "todas", diarioSearch: "",
   periodo: "todo", semanaRev: 0, refSearch: "", periodoGraf: 0, // la gráfica de Inicio abre siempre en "Todo"
   estudiosFecha: null, // Pestaña ESTUDIOS: se inicializa a la fecha actual en renderEstudios()
@@ -1372,6 +1397,7 @@ const AJUSTES_DEFAULT = {
   contratosDefecto: { NASDAQ: 2, ORO: 14, SP500: 9, DOWJONES: 1, DAX: 1 },
   etiquetas: DEFAULT_ETIQUETAS.slice(),
   revisiones: {},        // { "AAAA-MM-DD" (lunes): { error, regla, guardada } }
+  graficosDelDia: {},    // { "AAAA-MM-DD": "https://drive.google.com/..." }
 };
 function mergeAjustes(a) {
   a = a || {};
@@ -1388,6 +1414,7 @@ function mergeAjustes(a) {
     contratosDefecto: { ...AJUSTES_DEFAULT.contratosDefecto, ...(a.contratosDefecto || {}) },
     etiquetas: Array.isArray(a.etiquetas) && a.etiquetas.length ? a.etiquetas.slice() : DEFAULT_ETIQUETAS.slice(),
     revisiones: { ...(a.revisiones || {}) },
+    graficosDelDia: { ...(a.graficosDelDia || {}) },
     // Flags de migración
     migracionTiposSetup_2026Oct06: a.migracionTiposSetup_2026Oct06 || false,
   };
@@ -1559,17 +1586,6 @@ function sumarDiasStr(fechaStr, n) {
   const [y, m, d] = fechaStr.split("-");
   return ymd(sumarDias(new Date(parseInt(y), parseInt(m) - 1, parseInt(d)), n));
 }
-function opsDelDia(fecha) { return state.ops.filter(o => o.fecha === fecha); }
-function opsDelDiaAgrupadasPorMercado(fecha) {
-  const ops = opsDelDia(fecha);
-  const agrupadas = {};
-  ops.forEach(o => {
-    const instr = o.instrumento || "DESCONOCIDO";
-    if (!agrupadas[instr]) agrupadas[instr] = [];
-    agrupadas[instr].push(o);
-  });
-  return agrupadas;
-}
 
 // ---------- Límites de riesgo diario ----------
 function estadoRiesgoHoy(modo) {
@@ -1617,6 +1633,7 @@ function initFirebase(cfg) {
       if (unsubscribeOps) { unsubscribeOps(); unsubscribeOps = null; }
       if (unsubscribeAjustes) { unsubscribeAjustes(); unsubscribeAjustes = null; }
       state.ops = [];
+      state.estudios = [];
       show("loginScreen");
     }
   });
@@ -1651,9 +1668,12 @@ function attachOpsListener() {
   unsubscribeOps = opsCol().where("uid", "==", currentUser.uid)
     .orderBy("fecha", "desc").orderBy("hora", "desc")
     .onSnapshot((snap) => {
-      state.ops = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter(o => o.tipo !== "ajustes");
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter(o => o.tipo !== "ajustes");
+      // Las entradas de estudio van aparte: nunca cuentan como operaciones.
+      state.estudios = docs.filter(o => o.tipo === "estudio");
+      state.ops = docs.filter(o => o.tipo !== "estudio");
       // Ejecuta la migración de tipos de setup una sola vez
-      if (!ajustes.migracionTiposSetup_2026Oct06) {
+      if (!ajustes.migracionTiposSetup_2026Oct06 && !migracionEnCurso) {
         migrateOpTypes();
       }
       // Solo se redibujan las pestañas que muestran operaciones: así no se
@@ -1666,7 +1686,13 @@ function attachOpsListener() {
 // "Continuidad" → "T-Continuidad"
 // "Giro" → "T-Giro"
 // "Testeo a zona perdida" → "T-Continuidad"
+let migracionEnCurso = false;
+function marcarMigracionHecha() {
+  ajustes.migracionTiposSetup_2026Oct06 = true;
+  return ajustesRef().set({ uid: currentUser.uid, migracionTiposSetup_2026Oct06: true }, { merge: true });
+}
 function migrateOpTypes() {
+  migracionEnCurso = true;
   const opsToMigrate = state.ops.filter(o => {
     const tipo = o.tipoSetup;
     return tipo === "Continuidad" || tipo === "Giro" || tipo === "Testeo a zona perdida";
@@ -1674,8 +1700,7 @@ function migrateOpTypes() {
 
   if (opsToMigrate.length === 0) {
     // No hay nada que migrar, marca como hecho
-    ajustes.migracionTiposSetup_2026Oct06 = true;
-    ajustesRef().update(ajustesPayload()).catch(() => {});
+    marcarMigracionHecha().catch(() => { migracionEnCurso = false; });
     return;
   }
 
@@ -1693,14 +1718,12 @@ function migrateOpTypes() {
 
   // Espera a que se actualicen todas y marca la migración como completada
   Promise.all(updates)
-    .then(() => {
-      ajustes.migracionTiposSetup_2026Oct06 = true;
-      return ajustesRef().update(ajustesPayload());
-    })
+    .then(() => marcarMigracionHecha())
     .then(() => {
       toast(`✅ Migración completada: ${opsToMigrate.length} operaciones actualizadas`);
     })
     .catch((err) => {
+      migracionEnCurso = false;
       toast("⚠️ Error en migración de tipos: " + (err && err.message || err));
     });
 }
@@ -2090,7 +2113,7 @@ function openOpForm(id) {
   <div class="modal-title" style="margin-bottom:2px;padding-bottom:10px"><h2>${isEdit ? "Editar operación" : "Nueva operación"}</h2><button class="close" onclick="closeModal()">✕</button></div>
   ${aviso}
   <div class="r3">
-    <div><label>Fecha</label><input type="date" id="f_fecha" value="${esc(o.fecha || todayStr())}"></div>
+    <div><label>Fecha</label>${datePickerHtml("f_fecha", o.fecha || todayStr())}</div>
     <div><label>Hora</label><input type="time" id="f_hora" value="${esc(o.hora || nowHM())}"></div>
     <div><label>Modo</label><select id="f_modo" onchange="updateRiesgo()"><option value="demo" ${modoIni === 'demo' ? 'selected' : ''}>Demo</option><option value="real" ${modoIni === 'real' ? 'selected' : ''}>Real</option></select></div>
   </div>
@@ -2371,7 +2394,7 @@ function openNoOperoForm() {
   <div class="modal-title"><h2>No opero hoy</h2><button class="close" onclick="closeModal()">✕</button></div>
   <p class="small">Registrar los días en que decides no operar cuenta como disciplina en Stats y en la revisión semanal.</p>
   <div class="grid2" style="margin-bottom:0">
-    <div><label>Fecha</label><input type="date" id="n_fecha" value="${todayStr()}"></div>
+    <div><label>Fecha</label>${datePickerHtml("n_fecha", todayStr())}</div>
     <div><label>Modo</label><select id="n_modo"><option value="demo" ${state.modo === 'demo' ? 'selected' : ''}>Demo</option><option value="real" ${state.modo === 'real' ? 'selected' : ''}>Real</option></select></div>
   </div>
   <label>Mercado</label>
@@ -2667,83 +2690,299 @@ function refreshRefList() {
   if (el) el.innerHTML = refListHtml();
 }
 
+// Un enlace normal de Drive (".../file/d/ID/view") no se puede mostrar como
+// imagen: se convierte a la dirección directa de la imagen usando su ID.
+function urlImagenDrive(link) {
+  if (!link) return "";
+  const m = link.match(/\/d\/([\w-]{10,})/) || link.match(/[?&]id=([\w-]{10,})/);
+  return m ? "https://drive.google.com/thumbnail?id=" + m[1] + "&sz=w2000" : link;
+}
+
+function abrirEditarGrafico(fecha) {
+  const actual = ajustes.graficosDelDia && ajustes.graficosDelDia[fecha] ? ajustes.graficosDelDia[fecha] : "";
+  const link = prompt("Pega el link de Google Drive del gráfico diario:\n\n(Comparte la imagen en Drive y copia el link aquí)", actual);
+  if (link === null) return; // Usuario canceló
+
+  if (!ajustes.graficosDelDia) ajustes.graficosDelDia = {};
+  const valor = link.trim();
+  if (valor === "") delete ajustes.graficosDelDia[fecha];
+  else ajustes.graficosDelDia[fecha] = valor;
+  render();
+  // Se guarda solo el gráfico de ese día (no se reescriben el resto de ajustes)
+  ajustesRef().update({
+    ["graficosDelDia." + fecha]: valor === "" ? firebase.firestore.FieldValue.delete() : valor,
+  }).then(() => {
+    toast(valor ? "✅ Gráfico guardado" : "✅ Gráfico eliminado");
+  }).catch((err) => {
+    toast("⚠️ Error al guardar: " + (err && err.message || err));
+  });
+}
+
 function renderEstudios() {
   const fecha = state.estudiosFecha || todayStr();
-  const opsHoy = opsDelDiaAgrupadasPorMercado(fecha);
-  const mercados = Object.keys(opsHoy).sort();
-  const totalOps = Object.values(opsHoy).flat().length;
+  state.estudiosFecha = fecha;
+  const delDia = (state.estudios || []).filter(e => e.fecha === fecha)
+    .sort((a, b) => (a.hora || "").localeCompare(b.hora || ""));
+  const porMercado = {};
+  delDia.forEach(e => { (porMercado[e.instrumento] = porMercado[e.instrumento] || []).push(e); });
+  const mercados = Object.keys(INSTRUMENTOS).filter(k => porMercado[k]);
+  const graficoUrl = urlImagenDrive(ajustes.graficosDelDia && ajustes.graficosDelDia[fecha]);
 
   let html = `
-  <div style="text-align:center;margin-bottom:20px;">
-    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px;">
-      <button class="btn btn-sm btn-ghost" onclick="state.estudiosFecha = sumarDiasStr(state.estudiosFecha, -1); render();">◀ Ant.</button>
-      <input type="date" value="${fecha}" onchange="state.estudiosFecha = this.value; render();"
-             style="flex:1;max-width:200px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);text-align:center;font-size:14px;font-weight:600;">
-      <button class="btn btn-sm btn-ghost" onclick="state.estudiosFecha = sumarDiasStr(state.estudiosFecha, 1); render();">Sig. ▶</button>
+  <div style="text-align:center;margin-bottom:16px;">
+    <div class="est-nav">
+      <button class="flecha" onclick="elegirFechaEstudios(sumarDiasStr(state.estudiosFecha, -1))" aria-label="Día anterior">◀</button>
+      ${datePickerHtml("est_fecha", fecha, elegirFechaEstudios)}
+      <button class="flecha" onclick="elegirFechaEstudios(sumarDiasStr(state.estudiosFecha, 1))" aria-label="Día siguiente">▶</button>
     </div>
     <div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;">
-      ${totalOps} operación${totalOps !== 1 ? 'es' : ''} • ${fmtDate(fecha)}
+      ${delDia.length} entrada${delDia.length !== 1 ? 's' : ''} del sistema
     </div>
   </div>`;
 
-  if (totalOps === 0) {
-    html += `<div class="card" style="text-align:center;padding:32px 16px;"><p style="color:var(--muted2);">Sin operaciones en este día</p></div>`;
+  if (graficoUrl) {
+    html += `
+    <div class="card" style="text-align:center;">
+      <img src="${esc(graficoUrl)}" alt="Gráfico ${fmtDate(fecha)}" onclick="verGraficoGrande('${esc(graficoUrl)}')" style="width:100%;border-radius:8px;margin-bottom:10px;max-height:320px;object-fit:contain;cursor:zoom-in;">
+      <button class="btn btn-sm btn-ghost" onclick="abrirEditarGrafico('${fecha}')">Cambiar gráfico</button>
+    </div>`;
   } else {
-    mercados.forEach(mercado => {
-      const ops = opsHoy[mercado];
-      const met = calcMetricas(ops);
-      const instrInfo = INSTRUMENTOS[mercado] || { corto: mercado };
-
-      html += `
-      <div class="card">
-        <div style="text-align:center;margin-bottom:12px;">
-          <h3 style="margin:0 0 4px 0;color:var(--text);">${instrInfo.corto}</h3>
-          <div style="font-size:12px;color:var(--muted);">${ops.length} operación${ops.length !== 1 ? 'es' : ''}</div>
-        </div>
-        <div class="grid2" style="margin-bottom:12px;">
-          <div class="stat">
-            <div class="v ${met.netTotal >= 0 ? 'pos' : 'neg'}">${fmtEUR(met.netTotal)}</div>
-            <div class="l">Neto</div>
-          </div>
-          <div class="stat">
-            <div class="v">${met.wins}W / ${met.losses}L</div>
-            <div class="l">W/L</div>
-          </div>
-        </div>
-        <div style="border-top:1px solid var(--border);padding-top:12px;">`;
-
-      ops.forEach((o, i) => {
-        const resultado = resultadoTipo(o);
-        const neto = netEUR(o) || 0;
-        const badgeClass = resultado === "win" ? "badge-pos" : resultado === "loss" ? "badge-neg" : "badge-be";
-
-        html += `
-          <div style="padding:10px 0;border-bottom:${i < ops.length - 1 ? '1px solid var(--border)' : 'none'};">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <div style="font-weight:600;font-size:13px;color:var(--text);">
-                ${o.hora || '—'} • ${o.tipoSetup || '—'}
-              </div>
-              <div style="font-weight:700;color:${neto >= 0 ? 'var(--green)' : 'var(--red)'};font-size:14px;">
-                ${fmtEUR(neto, true)}
-              </div>
-            </div>
-            <div style="display:flex;gap:8px;font-size:11px;color:var(--muted);">
-              <span>E: ${fmtN(o.entrada, 2)}</span>
-              <span>Stop: ${fmtN(o.stop, 2)}</span>
-              <span>TP1: ${fmtN(o.tp1, 2)}</span>
-              ${o.tp2 ? `<span>TP2: ${fmtN(o.tp2, 2)}</span>` : ''}
-            </div>
-          </div>`;
-      });
-
-      html += `
-        </div>
-      </div>`;
-    });
+    html += `
+    <div class="card" style="text-align:center;padding:20px;">
+      <p style="color:var(--muted2);margin-bottom:10px;">Sin gráfico para este día</p>
+      <button class="btn btn-sm btn-primary" onclick="abrirEditarGrafico('${fecha}')">📊 Agregar gráfico</button>
+    </div>`;
   }
 
+  if (!delDia.length) {
+    html += `<div class="card" style="text-align:center;padding:28px 16px;">
+      <p style="color:var(--muted2);margin-bottom:12px;">Sin entradas de estudio este día</p>
+      <button class="btn btn-sm btn-primary" onclick="openEstudioForm()">+ Nueva entrada de estudio</button>
+    </div>`;
+    return html;
+  }
+
+  if (mercados.length > 1) html += estudioResumenHtml("Total del día", delDia);
+
+  mercados.forEach(k => {
+    const lista = porMercado[k];
+    html += `<div class="card">${estudioResumenInner(INSTRUMENTOS[k].corto, lista)}
+      <div style="border-top:1px solid var(--border);margin-top:12px;">
+        ${lista.map((e, i) => estudioFilaHtml(e, i < lista.length - 1)).join("")}
+      </div></div>`;
+  });
   return html;
 }
+
+// ---------- ESTUDIOS: entradas del sistema marcadas al estudiar el gráfico ----------
+// Se guardan en la misma colección con tipo "estudio", pero se separan al
+// leerlas (state.estudios) y NUNCA entran en Inicio, Diario, Stats ni saldo.
+const RESULTADOS_ESTUDIO = [["stop", "Stop"], ["tp1", "TP1"], ["tp2", "TP2"], ["be", "BE"], ["manual", "Manual"]];
+
+// Cálculo de una entrada de estudio. Importes en € brutos (sin comisiones).
+function calcEstudio(e) {
+  const out = { pts: null, R: null, eur: null, maxR: null, efic: null };
+  const num = (x) => typeof x === "number" && !isNaN(x);
+  if (!num(e.entrada)) return out;
+  const s = e.direccion === "CORTO" ? -1 : 1;
+  const vp = getValorPunto(e.instrumento);
+  const contr = num(e.contratos) && e.contratos > 0 ? e.contratos : 1;
+  const riesgo = num(e.stop) ? Math.abs(e.entrada - e.stop) : 0;
+  let salida = null;
+  if (e.resultado === "stop") salida = e.stop;
+  else if (e.resultado === "tp1") salida = e.tp1;
+  else if (e.resultado === "tp2") salida = e.tp2;
+  else if (e.resultado === "be") salida = e.entrada;
+  else if (e.resultado === "manual" && e.manualModo === "precio") salida = e.manualValor;
+  if (num(salida)) {
+    out.pts = s * (salida - e.entrada);
+    out.eur = out.pts * vp * contr;
+  } else if (e.resultado === "manual" && e.manualModo === "eur" && num(e.manualValor)) {
+    out.eur = e.manualValor;
+    out.pts = e.manualValor / (vp * contr);
+  }
+  if (num(out.pts)) {
+    out.pts = Math.round(out.pts * 10000) / 10000;
+    out.eur = Math.round(out.eur * 100) / 100;
+    if (riesgo > 0) out.R = out.pts / riesgo;
+  }
+  if (num(e.maximo)) {
+    const maxPts = s * (e.maximo - e.entrada);
+    if (riesgo > 0) out.maxR = maxPts / riesgo;
+    if (maxPts > 0 && num(out.pts)) out.efic = Math.round((out.pts / maxPts) * 100);
+  }
+  return out;
+}
+
+function metricasEstudios(lista) {
+  const calcs = lista.map(calcEstudio);
+  const conR = calcs.filter(c => typeof c.R === "number");
+  const wins = conR.filter(c => c.R > 0.05).length, losses = conR.filter(c => c.R < -0.05).length;
+  const ef = calcs.filter(c => typeof c.efic === "number");
+  return {
+    n: lista.length, wins, losses,
+    sumR: conR.reduce((a, c) => a + c.R, 0),
+    eur: calcs.reduce((a, c) => a + (c.eur || 0), 0),
+    winrate: (wins + losses) ? Math.round(wins / (wins + losses) * 100) : null,
+    eficMedia: ef.length ? Math.round(ef.reduce((a, c) => a + c.efic, 0) / ef.length) : null,
+  };
+}
+function estudioResumenInner(titulo, lista) {
+  const m = metricasEstudios(lista);
+  const tono = (x) => x > 0 ? "pos" : x < 0 ? "neg" : "";
+  return `<div style="text-align:center;margin-bottom:12px;">
+      <h3 style="margin:0 0 4px 0;color:var(--text);">${esc(titulo)}</h3>
+      <div style="font-size:12px;color:var(--muted);">${m.n} entrada${m.n !== 1 ? 's' : ''} · ${m.wins}W / ${m.losses}L${m.winrate !== null ? ` · ${m.winrate}% acierto` : ''}</div>
+    </div>
+    <div class="grid3 est-kpis" style="margin-bottom:0;gap:8px;">
+      <div class="stat"><div class="v ${tono(m.sumR)}">${fmtR(m.sumR)}</div><div class="l">Resultado</div></div>
+      <div class="stat"><div class="v ${tono(m.eur)}">${fmtEUR(m.eur, true)}</div><div class="l">Euros</div></div>
+      <div class="stat"><div class="v">${m.eficMedia !== null ? m.eficMedia + "%" : "—"}</div><div class="l">Eficiencia</div></div>
+    </div>`;
+}
+function estudioResumenHtml(titulo, lista) { return `<div class="card">${estudioResumenInner(titulo, lista)}</div>`; }
+
+function estudioFilaHtml(e, conBorde) {
+  const c = calcEstudio(e);
+  const tono = typeof c.R === "number" ? (c.R > 0.05 ? "var(--green)" : c.R < -0.05 ? "var(--red)" : "var(--muted)") : "var(--muted)";
+  const etiquetaRes = (RESULTADOS_ESTUDIO.find(([k]) => k === e.resultado) || [, "—"])[1];
+  const p = (l, v) => typeof v === "number" ? `<span>${l}: ${fmtN(v, 2)}</span>` : "";
+  return `<div onclick="openEstudioForm('${e.id}')" style="padding:12px 0;text-align:center;cursor:pointer;${conBorde ? 'border-bottom:1px solid var(--border);' : ''}">
+    <div style="font-weight:700;font-size:13.5px;color:var(--text);">${esc(e.hora || "—")} · ${esc(e.tipoSetup || "—")} · ${e.direccion === "CORTO" ? "Corto" : "Largo"}</div>
+    <div style="font-weight:800;font-size:15px;color:${tono};margin:4px 0;">${fmtR(c.R)} · ${fmtEUR(c.eur, true)} <span style="font-size:11px;color:var(--muted);font-weight:700;">(${etiquetaRes})</span></div>
+    <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:4px 10px;font-size:11px;color:var(--muted);">
+      ${p("Entrada", e.entrada)}${p("Stop", e.stop)}${p("TP1", e.tp1)}${p("TP2", e.tp2)}${p("Máx.", e.maximo)}
+    </div>
+    ${typeof c.maxR === "number" || typeof c.efic === "number" ? `<div style="font-size:11px;color:var(--muted2);margin-top:3px;">${typeof c.maxR === "number" ? `Recorrido máx. ${fmtR(c.maxR)}` : ""}${typeof c.efic === "number" ? ` · Eficiencia ${c.efic}%` : ""}</div>` : ""}
+    ${e.notas ? `<div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:4px;font-family:'Crimson Pro',Georgia,serif;">${esc(e.notas)}</div>` : ""}
+  </div>`;
+}
+
+function verGraficoGrande(url) {
+  openModal(`<div class="modal-handle"></div><div class="modal-title"><h2>Gráfico del día</h2><button class="close" onclick="closeModal()">✕</button></div>
+    <img src="${esc(url)}" style="width:100%;border-radius:8px;margin-top:10px;">`);
+}
+
+// ---------- Formulario de entrada de estudio ----------
+let estudioEditId = null;
+function openEstudioForm(id) {
+  const e = id ? (state.estudios || []).find(x => x.id === id) : {};
+  if (id && !e) return;
+  estudioEditId = id || null;
+  const instr = e.instrumento || DEFAULT_INSTRUMENTO;
+  const res = e.resultado || "";
+  const modoM = e.manualModo || "precio";
+  const numIn = (idc, v, ph) => `<input type="number" step="any" inputmode="decimal" id="${idc}" value="${typeof v === 'number' ? v : ''}" placeholder="${ph || ''}" oninput="previewEstudio()">`;
+  openModal(`
+  <div class="fm">
+  <div class="modal-handle"></div>
+  <div class="modal-title" style="margin-bottom:2px;padding-bottom:10px"><h2>${id ? "Editar estudio" : "Nueva entrada de estudio"}</h2><button class="close" onclick="closeModal()">✕</button></div>
+  <div class="r3">
+    <div><label>Fecha</label>${datePickerHtml("es_fecha", e.fecha || state.estudiosFecha || todayStr())}</div>
+    <div><label>Hora</label><input type="time" id="es_hora" value="${esc(e.hora || "")}"></div>
+    <div><label>Contratos</label><input type="number" inputmode="numeric" min="1" step="1" id="es_contratos" value="${typeof e.contratos === 'number' ? e.contratos : getContratosDefecto(instr)}" oninput="previewEstudio()"></div>
+  </div>
+  <div class="r3b">
+    <div><label>Mercado</label><select id="es_instrumento" onchange="document.getElementById('es_contratos').value=getContratosDefecto(this.value);previewEstudio()">${Object.keys(INSTRUMENTOS).map(k => `<option value="${k}" ${instr === k ? 'selected' : ''}>${INSTRUMENTOS[k].corto}</option>`).join("")}</select></div>
+    <div><label>Dirección</label><select id="es_direccion" onchange="previewEstudio()"><option value="LARGO" ${e.direccion !== 'CORTO' ? 'selected' : ''}>Largo</option><option value="CORTO" ${e.direccion === 'CORTO' ? 'selected' : ''}>Corto</option></select></div>
+    <div><label>Tipo</label><select id="es_tipo"><option value="">—</option>${TIPOS_SETUP.map(t => `<option value="${t}" ${e.tipoSetup === t ? 'selected' : ''}>${t}</option>`).join("")}</select></div>
+  </div>
+  <div class="r2">
+    <div><label>Entrada</label>${numIn("es_entrada", e.entrada)}</div>
+    <div><label>Stop</label>${numIn("es_stop", e.stop)}</div>
+  </div>
+  <div class="r3b">
+    <div><label>TP1</label>${numIn("es_tp1", e.tp1)}</div>
+    <div><label>TP2</label>${numIn("es_tp2", e.tp2)}</div>
+    <div><label>Máx. alcanzado</label>${numIn("es_maximo", e.maximo)}</div>
+  </div>
+  <label>Resultado</label>
+  <div class="chip-row" id="es_resultado" style="margin-bottom:0">
+    ${RESULTADOS_ESTUDIO.map(([k, l]) => `<button type="button" class="chip ${res === k ? 'active' : ''}" data-res="${k}" onclick="elegirResultadoEstudio('${k}')">${l}</button>`).join("")}
+  </div>
+  <div id="es_manual" class="${res === 'manual' ? '' : 'hidden'}">
+    <div class="chip-row" style="margin:10px 0 0">
+      <button type="button" class="chip ${modoM === 'precio' ? 'active' : ''}" data-modo="precio" onclick="elegirModoManual('precio')">Precio de salida</button>
+      <button type="button" class="chip ${modoM === 'eur' ? 'active' : ''}" data-modo="eur" onclick="elegirModoManual('eur')">€ ganados</button>
+    </div>
+    <label id="es_manual_lbl">${modoM === 'eur' ? '€ ganados (negativo si es pérdida)' : 'Precio de salida'}</label>
+    ${numIn("es_manual_valor", e.manualValor)}
+  </div>
+  <div id="es_preview"></div>
+  <label>Notas</label>
+  <textarea id="es_notas" rows="2" placeholder="Qué viste, contexto, por qué es entrada del sistema…">${esc(e.notas || "")}</textarea>
+  <button class="btn btn-primary" style="margin-top:14px" onclick="guardarEstudio()">${id ? "Guardar cambios" : "Guardar entrada"}</button>
+  ${id ? `<button class="btn btn-red" style="margin-top:8px" onclick="borrarEstudio()">Eliminar entrada</button>` : ""}
+  </div>`);
+  previewEstudio();
+}
+function elegirResultadoEstudio(k) {
+  document.querySelectorAll("#es_resultado .chip").forEach(b => b.classList.toggle("active", b.dataset.res === k));
+  document.getElementById("es_manual").classList.toggle("hidden", k !== "manual");
+  previewEstudio();
+}
+function elegirModoManual(m) {
+  document.querySelectorAll("#es_manual .chip").forEach(b => b.classList.toggle("active", b.dataset.modo === m));
+  document.getElementById("es_manual_lbl").textContent = m === "eur" ? "€ ganados (negativo si es pérdida)" : "Precio de salida";
+  previewEstudio();
+}
+function leerEstudioForm() {
+  const g = (id) => document.getElementById(id);
+  const n = (id) => { const v = parseFloat(String(g(id).value).replace(",", ".")); return isNaN(v) ? null : v; };
+  const resBtn = document.querySelector("#es_resultado .chip.active");
+  const modoBtn = document.querySelector("#es_manual .chip.active");
+  const resultado = resBtn ? resBtn.dataset.res : null;
+  const c = n("es_contratos");
+  return {
+    tipo: "estudio",
+    fecha: g("es_fecha").value || todayStr(), hora: g("es_hora").value || "",
+    instrumento: g("es_instrumento").value, direccion: g("es_direccion").value,
+    tipoSetup: g("es_tipo").value || null,
+    contratos: c && c >= 1 ? Math.round(c) : 1,
+    entrada: n("es_entrada"), stop: n("es_stop"), tp1: n("es_tp1"), tp2: n("es_tp2"), maximo: n("es_maximo"),
+    resultado,
+    manualModo: resultado === "manual" ? (modoBtn ? modoBtn.dataset.modo : "precio") : null,
+    manualValor: resultado === "manual" ? n("es_manual_valor") : null,
+    notas: g("es_notas") ? g("es_notas").value.trim() : "",
+  };
+}
+function previewEstudio() {
+  const box = document.getElementById("es_preview");
+  if (!box) return;
+  const e = leerEstudioForm();
+  const c = calcEstudio(e);
+  if (typeof c.pts !== "number") { box.innerHTML = `<div class="rk empty" style="text-align:center">Rellena entrada, stop y resultado para ver el cálculo.</div>`; return; }
+  const col = (x) => typeof x === "number" ? (x > 0 ? "pos" : x < 0 ? "neg" : "") : "";
+  box.innerHTML = `<div class="rk"><div class="row3" style="text-align:center">
+    <div><label style="margin:0">Resultado</label><div class="v ${col(c.R)}">${fmtR(c.R)}</div></div>
+    <div><label style="margin:0">Euros</label><div class="v ${col(c.eur)}">${fmtEUR(c.eur, true)}</div></div>
+    <div><label style="margin:0">Eficiencia</label><div class="v">${typeof c.efic === "number" ? c.efic + "%" : "—"}</div></div>
+  </div><div class="msg" style="text-align:center;color:var(--muted)">${fmtN(c.pts, 2)} puntos${typeof c.maxR === "number" ? ` · recorrido máx. ${fmtR(c.maxR)}` : ""} · sin comisiones</div></div>`;
+}
+function guardarEstudio() {
+  if (!document.getElementById("es_entrada")) return;
+  const e = leerEstudioForm();
+  if (!e.tipoSetup) { toast("Elige el tipo de entrada"); return; }
+  if (typeof e.entrada !== "number" || typeof e.stop !== "number") { toast("Faltan entrada y stop"); return; }
+  if (!e.resultado) { toast("Elige el resultado"); return; }
+  if (e.resultado === "tp1" && typeof e.tp1 !== "number") { toast("Falta el precio del TP1"); return; }
+  if (e.resultado === "tp2" && typeof e.tp2 !== "number") { toast("Falta el precio del TP2"); return; }
+  if (e.resultado === "manual" && typeof e.manualValor !== "number") { toast("Falta el resultado manual"); return; }
+  const id = estudioEditId;
+  state.estudiosFecha = e.fecha;
+  closeModal();
+  saveOp(e, id).catch(saveErr);
+  toast(id ? "Entrada actualizada" : "Entrada de estudio guardada");
+}
+function borrarEstudio() {
+  const id = estudioEditId;
+  if (!id || !confirm("¿Eliminar esta entrada de estudio?")) return;
+  closeModal();
+  deleteOp(id).catch(saveErr);
+  toast("Entrada eliminada");
+}
+// El "+" de arriba: en Estudios abre una entrada de estudio; en el resto, una operación.
+function botonNuevo() { if (state.tab === "estudios") openEstudioForm(); else openOpForm(); }
 
 function renderReferencia() {
   return `
@@ -3012,6 +3251,78 @@ function clearTestData() {
 // ---------------------------------------------------------------------
 // MODAL
 // ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+// SELECTOR DE FECHA (calendario mensual). Sustituye al de serie del
+// navegador. Guarda la fecha en un campo oculto con el mismo id de siempre,
+// así el resto de la app la lee igual que antes ("AAAA-MM-DD").
+// ---------------------------------------------------------------------
+const MESES_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+const DIAS_CORTO_ES = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+const dpAlCambiar = {}; // id → función a la que avisar al elegir día
+function fechaLarga(f) {
+  if (!f) return "Elegir fecha";
+  const [y, m, d] = f.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return `${DIAS_CORTO_ES[dt.getDay()]}, ${d} ${MESES_ES[m - 1].slice(0, 3)} ${y}`;
+}
+function datePickerHtml(id, valor, alCambiar) {
+  if (alCambiar) dpAlCambiar[id] = alCambiar; else delete dpAlCambiar[id];
+  return `<input type="hidden" id="${id}" value="${esc(valor || "")}"><button type="button" class="dp-btn" id="${id}_btn" onclick="abrirCalendario('${id}')">${fechaLarga(valor)}</button>`;
+}
+let calEstado = null; // { id, y, m }
+function abrirCalendario(id) {
+  const el = document.getElementById(id);
+  const f = (el && el.value) || todayStr();
+  const [y, m] = f.split("-").map(Number);
+  calEstado = { id, y, m: m - 1 };
+  pintarCalendario();
+}
+function moverMesCal(n) {
+  if (!calEstado) return;
+  const d = new Date(calEstado.y, calEstado.m + n, 1);
+  calEstado.y = d.getFullYear(); calEstado.m = d.getMonth();
+  pintarCalendario();
+}
+function cerrarCalendario() { const bg = document.getElementById("calBg"); if (bg) bg.remove(); calEstado = null; }
+function pintarCalendario() {
+  const { id, y, m } = calEstado;
+  const sel = (document.getElementById(id) || {}).value || "";
+  const hoy = todayStr();
+  const primero = (new Date(y, m, 1).getDay() + 6) % 7; // semana empieza en lunes
+  const diasMes = new Date(y, m + 1, 0).getDate();
+  let celdas = ["L", "M", "X", "J", "V", "S", "D"].map(d => `<div class="dow">${d}</div>`).join("");
+  for (let i = 0; i < primero; i++) celdas += "<div></div>";
+  for (let d = 1; d <= diasMes; d++) {
+    const f = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const dow = (primero + d - 1) % 7;
+    const cls = [f === sel ? "sel" : "", f === hoy ? "hoy" : "", dow >= 5 ? "finde" : ""].join(" ").trim();
+    celdas += `<button type="button" class="${cls}" onclick="elegirDiaCal('${f}')">${d}</button>`;
+  }
+  let bg = document.getElementById("calBg");
+  if (!bg) {
+    bg = document.createElement("div");
+    bg.className = "cal-bg"; bg.id = "calBg";
+    bg.onclick = (e) => { if (e.target === bg) cerrarCalendario(); };
+    document.body.appendChild(bg);
+  }
+  bg.innerHTML = `<div class="cal">
+    <div class="cal-head"><button type="button" onclick="moverMesCal(-1)">◀</button><div class="mes">${MESES_ES[m]} ${y}</div><button type="button" onclick="moverMesCal(1)">▶</button></div>
+    <div class="cal-grid">${celdas}</div>
+    <div class="cal-foot"><button type="button" class="btn btn-ghost" onclick="cerrarCalendario()">Cancelar</button><button type="button" class="btn btn-primary" onclick="elegirDiaCal(todayStr())">Hoy</button></div>
+  </div>`;
+}
+function elegirDiaCal(f) {
+  if (!calEstado) return;
+  const id = calEstado.id;
+  cerrarCalendario();
+  const el = document.getElementById(id);
+  if (el) el.value = f;
+  const b = document.getElementById(id + "_btn");
+  if (b) b.textContent = fechaLarga(f);
+  if (dpAlCambiar[id]) dpAlCambiar[id](f);
+}
+function elegirFechaEstudios(f) { state.estudiosFecha = f; render(); }
+
 function openModal(innerHtml) {
   closeModal();
   const bg = document.createElement("div");
@@ -3021,7 +3332,7 @@ function openModal(innerHtml) {
   bg.innerHTML = `<div class="modal">${innerHtml}</div>`;
   document.body.appendChild(bg);
 }
-function closeModal() { const bg = document.getElementById("activeModalBg"); if (bg) bg.remove(); }
+function closeModal() { cerrarCalendario(); const bg = document.getElementById("activeModalBg"); if (bg) bg.remove(); }
 
 </script>
 </body>

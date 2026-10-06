@@ -1,7 +1,7 @@
 // Service worker — guarda una copia de la app para que abra sin conexión.
 // Los datos (Firestore/Auth) siempre van a la red; Firestore ya guarda su
 // propia copia local de las operaciones.
-const CACHE = "trading-app-v6";
+const CACHE = "trading-app-v7";
 const ASSETS = ["./TradingOkar.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
 
 self.addEventListener("install", (e) => {
