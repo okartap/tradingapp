@@ -48,10 +48,10 @@ header.topbar{
   display:flex;align-items:center;justify-content:center;
 }
 header.topbar .brand{display:flex;flex-direction:column;align-items:center;gap:4px;}
-header.topbar .logo{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:9px;object-fit:cover;border:1px solid var(--border);display:block;}
+header.topbar .logo{position:absolute;left:16px;top:calc(50% + env(safe-area-inset-top) / 2);transform:translateY(-50%);width:32px;height:32px;border-radius:9px;object-fit:cover;border:1px solid var(--border);display:block;}
 header.topbar .brand-text div:first-child{font-weight:700;font-size:14px;letter-spacing:1.6px;text-transform:uppercase;color:var(--silver);text-align:center;}
 header.topbar .brand-text div:last-child{font-size:10.5px;color:var(--muted);font-family:'Crimson Pro',Georgia,serif;font-style:italic;letter-spacing:.3px;margin-top:2px;text-align:center;}
-header.topbar .header-add-btn{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:34px;height:34px;flex-shrink:0;border-radius:50%;background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--silver);color:var(--silver);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;}
+header.topbar .header-add-btn{position:absolute;right:16px;top:calc(50% + env(safe-area-inset-top) / 2);transform:translateY(-50%);width:34px;height:34px;flex-shrink:0;border-radius:50%;background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--silver);color:var(--silver);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;}
 main{padding:18px 16px;}
 
 /* Bottom nav */
@@ -171,6 +171,11 @@ tr:last-child td{border-bottom:none;}
 .est-nav .flecha{width:42px;height:42px;flex-shrink:0;border-radius:50%;background:var(--card);border:1px solid var(--border);color:var(--silver);font-size:15px;}
 .est-nav .dp-btn{flex:1;max-width:240px;}
 .fm .dp-btn{padding:8px 6px;font-size:14px;}
+.est-det{border-top:1px solid var(--border);margin-top:12px;}
+.est-det summary{list-style:none;cursor:pointer;text-align:center;padding:12px 0 4px;font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--silver);}
+.est-det summary::-webkit-details-marker{display:none;}
+.est-det summary::after{content:" ▾";}
+.est-det[open] summary::after{content:" ▴";}
 .fm select.mini{width:auto;padding:1px 6px;font-size:11px;border-radius:6px;font-weight:700;letter-spacing:0;text-transform:none;}
 .est-kpis .stat{padding:12px 4px;}
 .est-kpis .stat .v{font-size:clamp(14px,4.4vw,19px);white-space:nowrap;}
@@ -2693,10 +2698,38 @@ function refreshRefList() {
 
 // Un enlace normal de Drive (".../file/d/ID/view") no se puede mostrar como
 // imagen: se convierte a la dirección directa de la imagen usando su ID.
-function urlImagenDrive(link) {
-  if (!link) return "";
-  const m = link.match(/\/d\/([\w-]{10,})/) || link.match(/[?&]id=([\w-]{10,})/);
-  return m ? "https://drive.google.com/thumbnail?id=" + m[1] + "&sz=w2000" : link;
+function idDrive(link) {
+  const m = (link || "").match(/\/d\/([\w-]{10,})/) || (link || "").match(/[?&]id=([\w-]{10,})/);
+  return m ? m[1] : null;
+}
+// Direcciones de imagen posibles para un archivo de Drive, de mejor a peor.
+// La primera (lh3) no necesita tener la sesión de Google abierta, por eso
+// funciona en el iPhone; las otras son alternativas si fallara.
+function urlsImagenDrive(link) {
+  const id = idDrive(link);
+  if (!id) return link ? [link] : [];
+  return [
+    "https://lh3.googleusercontent.com/d/" + id + "=w2000",
+    "https://drive.google.com/thumbnail?id=" + id + "&sz=w2000",
+    "https://drive.google.com/uc?export=view&id=" + id,
+  ];
+}
+function urlImagenDrive(link) { return urlsImagenDrive(link)[0] || ""; }
+// Si una dirección falla, prueba la siguiente; si fallan todas, explica por qué.
+function imgDriveFallo(img) {
+  const urls = JSON.parse(img.dataset.urls || "[]");
+  const i = parseInt(img.dataset.i || "0", 10) + 1;
+  if (i < urls.length) { img.dataset.i = i; img.src = urls[i]; return; }
+  const aviso = document.createElement("div");
+  aviso.className = "rk empty";
+  aviso.style.textAlign = "center";
+  aviso.innerHTML = 'No se puede mostrar la imagen. Comprueba en Drive que está compartida como <b>"Cualquier persona con el enlace"</b>.' +
+    (img.dataset.link ? '<br><a href="' + img.dataset.link + '" target="_blank" rel="noopener">Abrir en Drive</a>' : "");
+  img.replaceWith(aviso);
+}
+function imgDriveHtml(link, estilo, ampliable) {
+  const urls = urlsImagenDrive(link);
+  return `<img src="${esc(urls[0] || "")}" data-urls="${esc(JSON.stringify(urls))}" data-link="${esc(link || "")}" data-i="0" alt="" onerror="imgDriveFallo(this)" ${ampliable ? `onclick="verGraficoGrande(this.src)"` : ""} style="${estilo}">`;
 }
 
 // Mercados que se estudian (pedido por Patry: normalmente Nasdaq y Oro).
@@ -2768,13 +2801,13 @@ function quitarGraficoForm() {
   guardarGraficosDia(fecha, g).then(() => toast("Gráfico quitado"), saveErr);
 }
 function graficoHtml(fecha, mercado, link) {
-  const url = urlImagenDrive(link);
   return `<div style="margin:4px 0 12px;">
-    <img src="${esc(url)}" alt="Gráfico" onclick="verGraficoGrande('${esc(url)}')" style="width:100%;border-radius:8px;max-height:340px;object-fit:contain;cursor:zoom-in;display:block;">
+    ${imgDriveHtml(link, "width:100%;border-radius:8px;max-height:340px;object-fit:contain;cursor:zoom-in;display:block;", true)}
     <button class="btn btn-sm btn-primary" style="margin-top:8px" onclick="abrirEditarGrafico('${fecha}', '${mercado}')">Cambiar gráfico</button>
   </div>`;
 }
 
+const estudiosAbiertos = new Set(); // desplegables abiertos (se mantienen al redibujar)
 function renderEstudios() {
   const fecha = state.estudiosFecha || todayStr();
   state.estudiosFecha = fecha;
@@ -2806,7 +2839,7 @@ function renderEstudios() {
   if (graficos._SIN) {
     html += `<div class="card">
       <h3 style="margin:0 0 8px 0;color:var(--amber);">Gráfico sin mercado</h3>
-      <img src="${esc(urlImagenDrive(graficos._SIN))}" alt="Gráfico" style="width:100%;border-radius:8px;max-height:260px;object-fit:contain;display:block;">
+      ${imgDriveHtml(graficos._SIN, "width:100%;border-radius:8px;max-height:260px;object-fit:contain;display:block;", false)}
       <button class="btn btn-sm btn-primary" style="margin-top:8px" onclick="abrirEditarGrafico('${fecha}', '', true)">Asignar a un mercado</button>
     </div>`;
   }
@@ -2829,8 +2862,14 @@ function renderEstudios() {
       : `<h3 style="margin:0 0 4px 0;color:var(--text);">${esc(nombre)}</h3><div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Sin entradas todavía</div>`;
     if (graficos[k]) html += `<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px;">${graficoHtml(fecha, k, graficos[k])}</div>`;
     else html += `<button class="btn btn-sm btn-primary" style="margin-top:12px" onclick="abrirEditarGrafico('${fecha}', '${k}')">+ Gráfico de ${esc(nombre)}</button>`;
-    if (lista.length) html += `<div style="border-top:1px solid var(--border);margin-top:12px;">${lista.map((e, i) => estudioFilaHtml(e, i < lista.length - 1)).join("")}</div>`;
-    else html += `<button class="btn btn-sm btn-primary" style="margin-top:8px" onclick="openEstudioForm(null, '${k}')">+ Entrada de ${esc(nombre)}</button>`;
+    html += `<button class="btn btn-sm btn-primary" style="margin-top:8px" onclick="openEstudioForm(null, '${k}')">+ Entrada de ${esc(nombre)}</button>`;
+    if (lista.length) {
+      const clave = fecha + "|" + k;
+      html += `<details class="est-det" ${estudiosAbiertos.has(clave) ? "open" : ""} ontoggle="this.open ? estudiosAbiertos.add('${clave}') : estudiosAbiertos.delete('${clave}')">
+        <summary>Ver ${lista.length} entrada${lista.length !== 1 ? "s" : ""}</summary>
+        ${lista.map((e, i) => estudioFilaHtml(e, i < lista.length - 1)).join("")}
+      </details>`;
+    }
     html += `</div>`;
   });
   return html;
