@@ -148,6 +148,15 @@ tr:last-child td{border-bottom:none;}
 
 .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;color:var(--silver);z-index:80;opacity:0;transition:opacity .2s;pointer-events:none;}
 .toast.show{opacity:1;}
+/* Indicador de conexión: punto pequeño a la derecha del título (no lo descentra) */
+header.topbar .brand-text{text-align:center;}
+header.topbar .titulo{position:relative;display:inline-block;}
+.conn-dot{position:absolute;left:100%;top:50%;transform:translateY(-50%);margin-left:2px;width:30px;height:30px;padding:0;background:none;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.conn-dot i{display:block;width:7px;height:7px;border-radius:50%;background:var(--muted2);transition:background .3s,box-shadow .3s;}
+.conn-dot.ok i{background:var(--green);box-shadow:0 0 6px rgba(76,175,130,.7);}
+.conn-dot.pend i{background:var(--amber);box-shadow:0 0 6px rgba(224,156,58,.7);animation:connBlink 1s ease-in-out infinite;}
+.conn-dot.off i{background:var(--red);box-shadow:0 0 6px rgba(224,85,85,.7);}
+@keyframes connBlink{50%{opacity:.2;}}
 
 /* Selector de fecha propio (calendario mensual estilo iOS) */
 .dp-btn{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:11px 13px;font-size:15px;font-weight:600;font-family:'Rajdhani',sans-serif;text-align:center;letter-spacing:.3px;}
@@ -384,7 +393,7 @@ th,td{text-align:center !important;}
     <div class="brand">
       <img class="logo" src="icon-192.png" alt="Okartap">
       <div class="brand-text">
-        <div>Okartap</div>
+        <div class="titulo">Okartap<button type="button" class="conn-dot wait" id="connDot" onclick="toastConexion()" aria-label="Estado de conexión"><i></i></button></div>
         <div id="topSub">Diario · Stats · Estudios · Manual</div>
       </div>
     </div>
@@ -1617,6 +1626,85 @@ function avisoRiesgoHtml(r) {
 }
 
 // =====================================================================
+// INDICADOR DE CONEXIÓN (punto junto al título)
+//  🔴 sin internet o el servidor no responde · 🟠 cambios sin confirmar
+//  🟢 conectado y todo confirmado · gris: conectando al abrir la app
+// Solo OBSERVA los guardados: no cambia cómo se guardan los datos.
+// =====================================================================
+const conn = {
+  pendientes: 0,            // escrituras empezadas que el servidor aún no ha confirmado
+  online: navigator.onLine, // el teléfono tiene red
+  desdeServidor: null,      // último dato recibido: true = del servidor, false = de la memoria del teléfono
+  previos: false,           // quedan cambios de una sesión anterior por subir
+  arrancando: true,         // primeros segundos tras abrir: no se marca rojo por datos de la memoria
+  unsub: null,
+};
+function estadoConexion() {
+  if (!conn.online) return "off";
+  if (conn.desdeServidor === false && !conn.arrancando) return "off";
+  if (conn.pendientes > 0 || conn.previos) return "pend";
+  if (conn.desdeServidor !== true) return conn.arrancando ? "wait" : "off";
+  return "ok";
+}
+function pintarConexion() {
+  const el = document.getElementById("connDot");
+  if (el) el.className = "conn-dot " + estadoConexion();
+}
+function toastConexion() {
+  const n = conn.pendientes;
+  const txtN = n ? ` · ${n} cambio${n > 1 ? "s" : ""} pendiente${n > 1 ? "s" : ""}` : "";
+  const est = estadoConexion();
+  if (est === "off") toast((conn.online ? "❌ El servidor no responde" : "❌ Sin internet") + " · se guarda en el teléfono" + txtN);
+  else if (est === "pend") toast(n ? `⚠️ ${n} cambio${n > 1 ? "s" : ""} pendiente${n > 1 ? "s" : ""} de guardar · no cierres la app` : "⚠️ Subiendo cambios de la vez anterior · no cierres la app");
+  else if (est === "wait") toast("⏳ Conectando con el servidor…");
+  else toast("✅ Conectado · todo guardado");
+}
+// Cuenta cada guardado: +1 al empezar, −1 cuando el servidor lo confirma (o falla).
+// Devuelve exactamente la misma respuesta que antes, así nada cambia para la app.
+function vigilarEscrituras() {
+  const fs = firebase.firestore;
+  const envolver = (clase, metodo) => {
+    const proto = clase && clase.prototype;
+    const original = proto && proto[metodo];
+    if (typeof original !== "function" || original.__vigilado) return;
+    const vigilado = function (...args) {
+      const p = original.apply(this, args);
+      if (!p || typeof p.then !== "function") return p;
+      conn.pendientes++; pintarConexion();
+      return p.finally(() => { conn.pendientes = Math.max(0, conn.pendientes - 1); pintarConexion(); });
+    };
+    vigilado.__vigilado = true;
+    proto[metodo] = vigilado;
+  };
+  envolver(fs.DocumentReference, "set");
+  envolver(fs.DocumentReference, "update");
+  envolver(fs.DocumentReference, "delete");
+  envolver(fs.CollectionReference, "add");
+  envolver(fs.WriteBatch, "commit");
+  window.addEventListener("online", () => { conn.online = true; pintarConexion(); });
+  window.addEventListener("offline", () => { conn.online = false; pintarConexion(); });
+  pintarConexion();
+}
+// ¿Los datos llegan del servidor o de la memoria del teléfono? Usa la MISMA
+// consulta que el Diario, así Firebase la comparte y no hace lecturas extra.
+function vigilarServidor() {
+  pararVigilarServidor();
+  conn.arrancando = true; conn.desdeServidor = null; conn.previos = false;
+  clearTimeout(vigilarServidor._t);
+  vigilarServidor._t = setTimeout(() => { conn.arrancando = false; pintarConexion(); }, 5000);
+  conn.unsub = opsCol().where("uid", "==", currentUser.uid)
+    .orderBy("fecha", "desc").orderBy("hora", "desc")
+    .onSnapshot({ includeMetadataChanges: true }, (snap) => {
+      conn.desdeServidor = !snap.metadata.fromCache;
+      conn.previos = snap.metadata.hasPendingWrites;
+      if (conn.desdeServidor) conn.arrancando = false;
+      pintarConexion();
+    }, () => { conn.desdeServidor = false; conn.arrancando = false; pintarConexion(); });
+  pintarConexion();
+}
+function pararVigilarServidor() { if (conn.unsub) { conn.unsub(); conn.unsub = null; } }
+
+// =====================================================================
 // FIREBASE: login + Firestore (proyecto compartido con GestInmo)
 // Colección PLANA "trading_operaciones", aislada por el campo "uid".
 // =====================================================================
@@ -1625,12 +1713,14 @@ function initFirebase(cfg) {
   auth = firebase.auth();
   db = firebase.firestore();
   try { db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch (e) {}
+  try { vigilarEscrituras(); } catch (e) {} // el indicador nunca debe impedir que la app arranque
   auth.onAuthStateChanged((user) => {
     if (user) {
       currentUser = user;
       show("app");
       attachAjustesListener();
       attachOpsListener();
+      try { vigilarServidor(); } catch (e) {}
       let last = localStorage.getItem(LS_LAST_TAB) || "dashboard";
       if (!["dashboard", "diario", "stats", "estudios", "referencia", "mas"].includes(last)) last = "dashboard";
       goTab(last);
@@ -1638,6 +1728,7 @@ function initFirebase(cfg) {
       currentUser = null;
       if (unsubscribeOps) { unsubscribeOps(); unsubscribeOps = null; }
       if (unsubscribeAjustes) { unsubscribeAjustes(); unsubscribeAjustes = null; }
+      pararVigilarServidor();
       state.ops = [];
       state.estudios = [];
       show("loginScreen");
